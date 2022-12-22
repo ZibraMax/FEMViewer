@@ -503,7 +503,7 @@ class FEMViewer {
 	}
 
 	parseJSON(jsondata) {
-		this.norm = 1.0 / Math.max(...jsondata["nodes"].flat());
+		this.norm = 1.0 / math.max(jsondata["nodes"].flat());
 		// console.log(norm);
 		this.nodes = [];
 		this.nodes.push(...jsondata["nodes"]);
@@ -635,21 +635,17 @@ class FEMViewer {
 		);
 
 		let sizex =
-			Math.max(...secon_coords[0].flat()) -
-			Math.min(...secon_coords[0].flat());
+			math.max(secon_coords[0].flat()) - math.min(secon_coords[0].flat());
 		let sizey =
-			Math.max(...secon_coords[1].flat()) -
-			Math.min(...secon_coords[1].flat());
+			math.max(secon_coords[1].flat()) - math.min(secon_coords[1].flat());
 		let sizez =
-			Math.max(...secon_coords[2].flat()) -
-			Math.min(...secon_coords[2].flat());
+			math.max(secon_coords[2].flat()) - math.min(secon_coords[2].flat());
 		for (let i = 0; i < this.nodes.length; i++) {
 			this.nodes[i][0] -= sizex / 2;
 			this.nodes[i][1] -= sizey / 2;
 			this.nodes[i][2] -= sizez / 2;
 		}
-		this.size =
-			Math.max(...this.nodes.flat()) - Math.min(...this.nodes.flat());
+		this.size = math.max(this.nodes.flat()) - math.min(this.nodes.flat());
 	}
 	updateSolutionInfo() {
 		this.infoDetail = this.solutions_info[this.step][this.info];
@@ -657,8 +653,8 @@ class FEMViewer {
 
 	updateU() {
 		this.U = this.solutions[this.step];
-		const max_disp = Math.max(...this.U);
-		const min_disp = Math.min(...this.U);
+		const max_disp = math.max(this.U);
+		const min_disp = math.min(this.U);
 		const max_abs_disp =
 			Math.max(Math.abs(max_disp), Math.abs(min_disp)) * this.norm;
 		this.magnifSlider.min(-0.4 / max_abs_disp);
