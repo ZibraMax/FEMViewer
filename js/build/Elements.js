@@ -184,32 +184,15 @@ class Element3D extends Element {
 				const eyz = du[1][2] + du[2][1];
 				const epsilon = [exx, eyy, ezz, exz, eyz, exy];
 				this.epsilons.push(epsilon);
-			} else {
+			} else if (du.length == 2) {
 				const exx = du[0][0];
 				const eyy = du[1][1];
 
 				const exy = du[0][1] + du[1][0];
 				const epsilon = [exx, eyy, exy];
 				this.epsilons.push(epsilon);
-			}
-		}
-	}
-	postProcess(C, calculateStress) {
-		this.sigmas = [];
-		this.epsilons = [];
-		for (const du of this.dus) {
-			const exx = du[0][0];
-			const eyy = du[1][1];
-			const ezz = du[2][2];
-
-			const exy = du[0][1] + du[1][0];
-			const exz = du[0][2] + du[2][0];
-			const eyz = du[1][2] + du[2][1];
-			const epsilon = [exx, eyy, ezz, exz, eyz, exy];
-			this.epsilons.push(epsilon);
-			if (calculateStress) {
-				const sigma = math.multiply(C, epsilon);
-				this.sigmas.push(sigma);
+			} else {
+				this.epsilons = new Array(6).fill(new Array(6).fill(0.0));
 			}
 		}
 	}

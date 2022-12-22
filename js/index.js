@@ -1,13 +1,13 @@
 import { FEMViewer } from "./FEMViewer.js";
 let magnif = 600;
 let rot = false;
-let mode = 6;
+let mode = 0;
 let axis = 6;
 let zoom = 1;
 let lines = true;
 
 let path_str =
-	"https://raw.githubusercontent.com/ZibraMax/masters-slides/main/results/SiCube_l3_0_0_500_L_25_884.json";
+	"https://raw.githubusercontent.com/ZibraMax/FEM/master/Examples/Mesh_tests/I_test.json";
 let queryString = window.location.search;
 let vis_param = 0;
 if (queryString != "") {
@@ -46,7 +46,7 @@ if (queryString != "") {
 	}
 }
 
-let path = `./resources/${path_str}.json`;
+let path = `./resources/I.json`;
 if (path_str.startsWith("https://")) {
 	path = path_str;
 }
@@ -80,7 +80,6 @@ function openFiles(evt) {
 				const json_txt = e.target.result;
 				const jsondata = JSON.parse(json_txt);
 				O.reset();
-				O.step = 0;
 				O.parseJSON(jsondata);
 				O.init(false);
 			};

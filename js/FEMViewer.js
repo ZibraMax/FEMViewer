@@ -4,6 +4,7 @@ import { OrbitControls } from "./build/OrbitControls.js";
 import * as BufferGeometryUtils from "./build/BufferGeometryUtils.js";
 import { AxisGridHelper } from "./build/minigui.js";
 import { Lut } from "./build/Lut.js";
+import { CONFIG_DICT } from "./build/ConfigDicts.js";
 import {
 	Brick,
 	BrickO2,
@@ -26,12 +27,6 @@ const types = {
 	T2V: TriangularO2,
 	C1V: Quadrilateral,
 	C2V: Serendipity,
-};
-
-const functions = {
-	MAX: (x) => Math.max(...x),
-	MIN: (x) => Math.min(...x),
-	AVE: (x) => x.reduce((a, b) => a + b, 0) / x.length,
 };
 
 class FEMViewer {
@@ -110,10 +105,6 @@ class FEMViewer {
 	modalManager() {
 		activateModal();
 		this.gui.close();
-	}
-	defineElasticityTensor(C) {
-		this.calculateStress = true;
-		this.C = C;
 	}
 
 	async loadJSON(json_path) {
@@ -196,6 +187,10 @@ class FEMViewer {
 
 		this.gh = new AxisGridHelper(this.scene, 0);
 		this.gh.visible = this.axis;
+		this.guiSettings();
+	}
+
+	guiSettings() {
 		// GUI
 		this.gui
 			.add(this, "filename")
@@ -232,6 +227,7 @@ class FEMViewer {
 				this.updateMeshCoords();
 			});
 	}
+
 	async reload() {
 		this.reset();
 		await this.loadJSON(this.filename);
