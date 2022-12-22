@@ -1,13 +1,12 @@
 import { FEMViewer } from "./FEMViewer.js";
-let magnif = 600;
+let magnif = 0;
 let rot = false;
 let mode = 0;
 let axis = 6;
 let zoom = 1;
 let lines = true;
 
-let path_str =
-	"https://raw.githubusercontent.com/ZibraMax/FEM/master/Examples/Mesh_tests/I_test.json";
+let path_str = "";
 let queryString = window.location.search;
 let vis_param = 0;
 if (queryString != "") {

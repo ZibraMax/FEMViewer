@@ -9,6 +9,8 @@ class Element {
 		this.coords = coords;
 		this.gdls = gdls;
 		this.Ue = [];
+
+		this.nvn = gdls.length;
 	}
 	setUe(U, svs = true) {
 		this.Ue = [];
@@ -20,7 +22,7 @@ class Element {
 			this.Ue.push(u);
 		}
 
-		if (svs) this.giveSecondVariableSolution();
+		this.giveSecondVariableSolution(svs);
 	}
 	setGeometryCoords(Ue, mult, norm, parent_geometry, line_geometry) {
 		if (!Ue) {
@@ -116,7 +118,7 @@ class Element {
 		}
 		return zi;
 	}
-	giveSecondVariableSolution() {
+	giveSecondVariableSolution(strain = false) {
 		this.dus = [];
 		for (const z of this.domain) {
 			const [J, dpz] = this.J(z);
@@ -124,42 +126,32 @@ class Element {
 			const dpx = math.multiply(_J, dpz);
 			this.dus.push(math.multiply(this.Ue, math.transpose(dpx)));
 		}
-		this.calculateStrain();
+		if (strain) this.calculateStrain();
 	}
-	setMaxDispNode(colorMode, ndim = 3) {
+	setMaxDispNode(colorMode, strain) {
 		this.colors = Array(this.order.length).fill(0.0);
-		let variable = math.transpose(this.Ue);
+		let variable = this.Ue;
 		if (colorMode == "dispmag") {
 			for (let i = 0; i < this.order.length; i++) {
 				const gdl = this.order[i];
 				let color = 0.0;
-				for (const v of variable[gdl]) {
+				for (let j = 0; j < this.nvn; j++) {
+					let v = variable[j][gdl];
 					color += v ** 2;
 				}
 				this.colors[i] = color ** 0.5;
 			}
-		} else {
-			let dict = {};
-			if (ndim == 3) {
-				dict = {
-					epsx: 0,
-					epsy: 1,
-					epsz: 2,
-					epsxy: 3,
-					epsxz: 4,
-					epsyz: 5,
-				};
-			} else if (ndim == 2) {
-				dict = {
-					epsx: 0,
-					epsy: 1,
-					epsxy: 2,
-				};
-			}
+		} else if (strain) {
 			variable = this.epsilons;
 			for (let i = 0; i < this.order.length; i++) {
 				const gdl = this.order[i];
-				this.colors[i] = variable[gdl][dict[colorMode]];
+				this.colors[i] = variable[gdl][colorMode];
+			}
+		} else if (colorMode != "nocolor") {
+			variable = this.dus;
+			for (let i = 0; i < this.order.length; i++) {
+				const gdl = this.order[i];
+				this.colors[i] = variable[gdl][colorMode[0]][colorMode[1]];
 			}
 		}
 	}

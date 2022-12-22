@@ -47,7 +47,7 @@ class FEMViewer {
 	controls;
 	constructor(canvas, magnif, rot, axis = false, iz = 1.05) {
 		if (!magnif) {
-			magnif = 100;
+			magnif = 0;
 		}
 		// FEM
 		this.initial_zoom = iz;
@@ -69,6 +69,7 @@ class FEMViewer {
 		this.infoDetail = "";
 		this.ndim = -1;
 		this.border_elements = [];
+		this.config_dict = CONFIG_DICT["GENERAL"];
 
 		// THREE JS
 		this.renderer = new THREE.WebGLRenderer({
@@ -187,11 +188,9 @@ class FEMViewer {
 
 		this.gh = new AxisGridHelper(this.scene, 0);
 		this.gh.visible = this.axis;
-		this.guiSettings();
+		this.guiSettingsBasic();
 	}
-
-	guiSettings() {
-		// GUI
+	guiSettingsBasic() {
 		this.gui
 			.add(this, "filename")
 			.name("Filename")
@@ -205,27 +204,34 @@ class FEMViewer {
 			.add(this, "draw_lines")
 			.onChange(this.updateLines.bind(this))
 			.name("Draw lines");
-
-		// ESTO ES SOLO PARA DESPLAZAMIENTOS ESPECIFICAMENTE
-
-		this.gui
-			.add(this, "animate")
-			.name("Animation")
-			.listen()
-			.onChange(() => {
-				if (!this.animate) {
-					this.mult = 1.0;
+	}
+	guiSettings() {
+		// GUI
+		if (this.disp_gui_disp_folder) {
+			this.disp_gui_disp_folder.destroy();
+		}
+		if (this.config_dict["displacements"]) {
+			this.disp_gui_disp_folder = this.gui.addFolder("Displacements");
+			this.disp_gui_disp_folder
+				.add(this, "animate")
+				.name("Animation")
+				.listen()
+				.onChange(() => {
+					if (!this.animate) {
+						this.mult = 1.0;
+						this.updateMeshCoords();
+						this.updateGeometry();
+					}
+				});
+			this.magnifSlider = this.disp_gui_disp_folder
+				.add(this, "magnif", 0, 1)
+				.name("Disp multiplier")
+				.listen()
+				.onChange(() => {
 					this.updateMeshCoords();
-				}
-			});
-
-		this.magnifSlider = this.gui
-			.add(this, "magnif", 0, 1)
-			.name("Disp multiplier")
-			.listen()
-			.onChange(() => {
-				this.updateMeshCoords();
-			});
+					this.updateGeometry();
+				});
+		}
 	}
 
 	async reload() {
@@ -244,12 +250,16 @@ class FEMViewer {
 		} else {
 			this.colors = false;
 		}
+		console.log(this.colorOptions);
 		for (const e of this.elements) {
-			e.setMaxDispNode(this.colorOptions, this.ndim);
+			e.setMaxDispNode(
+				this.colorOptions,
+				this.config_dict["calculateStrain"]
+			);
 		}
 
-		let max_disp = -9999999999999;
-		let min_disp = 9999999999999;
+		let max_disp = -Infinity;
+		let min_disp = Infinity;
 		for (const e of this.elements) {
 			const variable = e.colors;
 			max_disp = Math.max(max_disp, ...variable);
@@ -259,9 +269,8 @@ class FEMViewer {
 		this.lut.setMax(max_disp);
 		this.lut.setMin(min_disp);
 		this.updateMaterial();
-		try {
-			this.updateMeshCoords();
-		} catch (error) {}
+		this.updateMeshCoords();
+		this.updateGeometry();
 	}
 	updateCamera() {
 		this.camera.updateProjectionMatrix();
@@ -358,7 +367,9 @@ class FEMViewer {
 				}
 			}
 		}
+	}
 
+	updateGeometry() {
 		this.mergedGeometry.dispose();
 		this.mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(
 			this.bufferGeometries,
@@ -408,6 +419,7 @@ class FEMViewer {
 		} else {
 			if (this.animate) {
 				this.updateMeshCoords();
+				this.updateGeometry();
 			}
 		}
 		if (this.resizeRendererToDisplaySize()) {
@@ -468,7 +480,6 @@ class FEMViewer {
 		this.animate = animate;
 		this.createElements();
 		this.createLines();
-		this.updateU();
 
 		this.mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(
 			this.bufferGeometries,
@@ -487,6 +498,7 @@ class FEMViewer {
 		// this.model.add(this.contour);
 
 		this.mesh = new THREE.Mesh(this.mergedGeometry, this.material);
+		this.updateU();
 		this.model.add(this.mesh);
 
 		this.scene.add(this.model);
@@ -500,6 +512,7 @@ class FEMViewer {
 		this.step = step;
 		this.updateU();
 		this.updateMeshCoords();
+		this.updateGeometry();
 	}
 
 	parseJSON(jsondata) {
@@ -566,26 +579,26 @@ class FEMViewer {
 		for (let i = 0; i < this.solutions_info.length; i++) {
 			solutions_info_str.push(i);
 		}
+		this.config_dict = CONFIG_DICT["GENERAL"];
+		let d = {};
+		for (let i = 0; i < this.nvn; i++) {
+			for (let j = 0; j < this.ndim; j++) {
+				d["d" + i + "d" + j] = [i, j];
+			}
+		}
+		this.config_dict["dict"] = d;
+		if (jsondata["properties"]) {
+			if (CONFIG_DICT[jsondata["properties"]["problem"]]) {
+				this.config_dict =
+					CONFIG_DICT[jsondata["properties"]["problem"]];
+			}
+		}
+
+		this.guiSettings();
 		if (this.loaded) {
 			this.guifolder.destroy();
 		}
-		let dict = {};
-		if (this.ndim == 3) {
-			dict = {
-				"\\(\\varepsilon_x\\)": "epsx",
-				"\\(\\varepsilon_y\\)": "epsy",
-				"\\(\\varepsilon_z\\)": "epsz",
-				"\\(\\varepsilon_{xy}\\)": "epsxy",
-				"\\(\\varepsilon_{xz}\\)": "epsxz",
-				"\\(\\varepsilon_{yz}\\)": "epsyz",
-			};
-		} else if (this.ndim == 2) {
-			dict = {
-				"\\(\\varepsilon_x\\)": "epsx",
-				"\\(\\varepsilon_y\\)": "epsy",
-				"\\(\\varepsilon_{xy}\\)": "epsxy",
-			};
-		}
+		let dict = this.config_dict["dict"];
 		this.guifolder = this.gui.addFolder("Solutions");
 		this.guifolder
 			.add(this, "colorOptions", {
@@ -624,12 +637,6 @@ class FEMViewer {
 		this.info = Object.keys(this.solutions_info[this.step])[0];
 		this.infoDetail = this.solutions_info[this.step][this.info];
 
-		// for (let s = 0; s < this.solutions.length; s++) {
-		// 	for (let i = 0; i < this.solutions[s].length; i++) {
-		// 		this.solutions[s][i] *= norm;
-		// 	}
-		// }
-
 		const secon_coords = this.nodes[0].map((_, colIndex) =>
 			this.nodes.map((row) => row[colIndex])
 		);
@@ -652,15 +659,18 @@ class FEMViewer {
 	}
 
 	updateU() {
-		this.U = this.solutions[this.step];
+		this.U = this.solutions[this.step].flat();
 		const max_disp = math.max(this.U);
 		const min_disp = math.min(this.U);
 		const max_abs_disp =
 			Math.max(Math.abs(max_disp), Math.abs(min_disp)) * this.norm;
-		this.magnifSlider.min(-0.4 / max_abs_disp);
-		this.magnifSlider.max(0.4 / max_abs_disp);
+		if (this.config_dict["displacements"]) {
+			this.magnifSlider.min(-0.4 / max_abs_disp);
+			this.magnifSlider.max(0.4 / max_abs_disp);
+		}
+
 		for (const e of this.elements) {
-			e.setUe(this.U, true);
+			e.setUe(this.U, this.config_dict["calculateStrain"]);
 		}
 		this.updateColorVariable();
 	}
@@ -672,6 +682,7 @@ class FEMViewer {
 	updateSolution() {
 		this.updateU();
 		this.updateMeshCoords();
+		this.updateGeometry();
 		this.updateSolutionInfo();
 	}
 	prevSolution() {
