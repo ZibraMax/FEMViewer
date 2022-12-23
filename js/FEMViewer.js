@@ -51,6 +51,7 @@ class FEMViewer {
 		}
 		// FEM
 		this.initial_zoom = iz;
+		this.solution_as_displacement = false;
 		this.axis = axis;
 		this.canvas = canvas;
 		this.rot = rot;
@@ -70,6 +71,7 @@ class FEMViewer {
 		this.ndim = -1;
 		this.border_elements = [];
 		this.config_dict = CONFIG_DICT["GENERAL"];
+		this.dimensions = ["x", "y", "z"];
 
 		// THREE JS
 		this.renderer = new THREE.WebGLRenderer({
@@ -117,7 +119,7 @@ class FEMViewer {
 	}
 	reset() {
 		this.animate = false;
-
+		this.colorOptions = "nocolor";
 		for (let i = 0; i < this.elements.length; i++) {
 			this.elements[i].geometry.dispose();
 			this.bufferGeometries.pop().dispose();
@@ -136,6 +138,7 @@ class FEMViewer {
 		this.renderer.renderLists.dispose();
 		this.bufferGeometries = [];
 		this.bufferLines = [];
+		this.variable_as_displacement = 2;
 
 		this.nodes = [];
 		this.dictionary = [];
@@ -146,6 +149,7 @@ class FEMViewer {
 		this.elements = [];
 		this.types = [];
 		this.magnif = 0.0;
+		this.max_abs_disp = undefined;
 	}
 
 	settings() {
@@ -204,9 +208,48 @@ class FEMViewer {
 			.add(this, "draw_lines")
 			.onChange(this.updateLines.bind(this))
 			.name("Draw lines");
+		this.sadguib = this.gui
+			.add(this, "solution_as_displacement")
+			.listen()
+			.name("Solution as disp")
+			.onFinishChange(this.toogleSolutionAsDisp.bind(this));
+	}
+	toogleSolutionAsDisp() {
+		this.config_dict["displacements"] = this.solution_as_displacement;
+		this.guiSettings();
+		this.updateVariableAsSolution();
+		if (!this.solution_as_displacement) {
+			this.magnifSlider.setValue(0.0);
+		}
+	}
+	updateVariableAsSolution() {
+		this.animate = false;
+		this.mult = 1;
+		this.updateSolution();
+		this.magnifSlider.setValue(0.4 / this.max_abs_disp);
 	}
 	guiSettings() {
 		// GUI
+		if (this.disp_gui_sol_disp_folder) {
+			this.disp_gui_sol_disp_folder.destroy();
+		}
+		if (this.solution_as_displacement) {
+			this.disp_gui_sol_disp_folder = this.gui.addFolder(
+				"Solution as displacement"
+			);
+			this.disp_gui_sol_disp_folder
+				.add(this, "variable_as_displacement", {
+					x: 0,
+					y: 1,
+					z: 2,
+				})
+				.listen()
+
+				.name("Variabe")
+				.onChange(this.updateVariableAsSolution.bind(this));
+			this.variable_as_displacement = 2;
+		}
+
 		if (this.disp_gui_disp_folder) {
 			this.disp_gui_disp_folder.destroy();
 		}
@@ -250,7 +293,6 @@ class FEMViewer {
 		} else {
 			this.colors = false;
 		}
-		console.log(this.colorOptions);
 		for (const e of this.elements) {
 			e.setMaxDispNode(
 				this.colorOptions,
@@ -335,11 +377,23 @@ class FEMViewer {
 		for (let i = 0; i < this.elements.length; i++) {
 			const e = this.elements[i];
 			const Ue = [];
-			for (const ue of e.Ue) {
-				Ue.push(ue);
-			}
-			for (let j = Ue.length; j < 3; j++) {
-				Ue.push(Array(e.coords.length).fill(0.0));
+			if (this.solution_as_displacement) {
+				for (let j = Ue.length; j < 3; j++) {
+					if (j == this.variable_as_displacement) {
+						for (const ue of e.Ue) {
+							Ue.push(ue);
+						}
+					} else {
+						Ue.push(Array(e.coords.length).fill(0.0));
+					}
+				}
+			} else {
+				for (const ue of e.Ue) {
+					Ue.push(ue);
+				}
+				for (let j = Ue.length; j < 3; j++) {
+					Ue.push(Array(e.coords.length).fill(0.0));
+				}
 			}
 
 			if (this.draw_lines) {
@@ -581,9 +635,32 @@ class FEMViewer {
 		}
 		this.config_dict = CONFIG_DICT["GENERAL"];
 		let d = {};
+		let variables = [
+			"U",
+			"V",
+			"W",
+			4,
+			5,
+			6,
+			7,
+			8,
+			9,
+			10,
+			11,
+			12,
+			13,
+			14,
+			15,
+			16,
+			17,
+			18,
+			19,
+			20,
+		];
+
 		for (let i = 0; i < this.nvn; i++) {
 			for (let j = 0; j < this.ndim; j++) {
-				d["d" + i + "d" + j] = [i, j];
+				d["d" + variables[i] + "/d" + this.dimensions[j]] = [i, j];
 			}
 		}
 		this.config_dict["dict"] = d;
@@ -592,6 +669,12 @@ class FEMViewer {
 				this.config_dict =
 					CONFIG_DICT[jsondata["properties"]["problem"]];
 			}
+		}
+
+		if (this.config_dict["displacements"]) {
+			this.sadguib.disable();
+		} else {
+			this.sadguib.enable();
 		}
 
 		this.guiSettings();
@@ -662,11 +745,11 @@ class FEMViewer {
 		this.U = this.solutions[this.step].flat();
 		const max_disp = math.max(this.U);
 		const min_disp = math.min(this.U);
-		const max_abs_disp =
+		this.max_abs_disp =
 			Math.max(Math.abs(max_disp), Math.abs(min_disp)) * this.norm;
 		if (this.config_dict["displacements"]) {
-			this.magnifSlider.min(-0.4 / max_abs_disp);
-			this.magnifSlider.max(0.4 / max_abs_disp);
+			this.magnifSlider.min(-0.4 / this.max_abs_disp);
+			this.magnifSlider.max(0.4 / this.max_abs_disp);
 		}
 
 		for (const e of this.elements) {

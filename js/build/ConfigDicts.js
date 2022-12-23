@@ -24,6 +24,16 @@ const PlaneStress = {
 	},
 };
 
+const PlaneStressSparse = {
+	calculateStrain: true,
+	displacements: true,
+	dict: {
+		"\\(\\varepsilon_x\\)": "0",
+		"\\(\\varepsilon_y\\)": "1",
+		"\\(\\varepsilon_{xy}\\)": "2",
+	},
+};
+
 const PlaneStressNonLocalSparse = {
 	calculateStrain: true,
 	displacements: true,
@@ -49,6 +59,7 @@ const CONFIG_DICT = {
 	Elasticity: Elasticity,
 	PlaneStrain: PlaneStrain,
 	PlaneStressNonLocalSparse: PlaneStressNonLocalSparse,
+	PlaneStressSparse: PlaneStressSparse,
 };
 
 export { CONFIG_DICT };
