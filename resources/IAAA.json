@@ -1,0 +1,25 @@
+{
+	"nodes": [
+		[0.0, 0.0],
+		[0.3, 0.0],
+		[0.3, 0.05]
+	],
+	"dictionary": [[0, 1, 2]],
+	"types": ["T1V"],
+	"regions": [],
+	"ebc": [],
+	"nbc": [],
+	"nvn": 1,
+	"ngdl": 3,
+	"holes": null,
+	"fillets": null,
+	"properties": {
+		"verbose": false,
+		"name": "",
+		"problem": "Torsion2D",
+		"_phi": null,
+		"G": [1],
+		"duration": 1,
+		"description": "FEM problem using the 2D Torsion formulation.,DOF: 1726,Elements: 769,Solver: lineal,EBC: 386,NBC: 0"
+	}
+}

@@ -37,9 +37,17 @@ class Element {
 				mult = 1.0;
 			}
 		}
+		if (!norm) {
+			if (norm != 0) {
+				norm = 1.0;
+			}
+		}
 
 		if (!parent_geometry) {
 			parent_geometry = this.geometry;
+		}
+		if (!line_geometry) {
+			line_geometry = this.line_geometry;
 		}
 		let count = parent_geometry.attributes.position.count;
 		for (let i = 0; i < count; i++) {
@@ -66,7 +74,6 @@ class Element {
 		}
 		parent_geometry.attributes.position.needsUpdate = true;
 		parent_geometry.computeVertexNormals();
-
 		if (line_geometry) {
 			count = line_geometry.attributes.position.count;
 			for (let i = 0; i < count; i++) {
@@ -75,19 +82,19 @@ class Element {
 				line_geometry.attributes.position.setX(
 					i,
 					verticei[0] * norm +
-						this.modifier[i][0] +
+						this.modifier[this.modifier_lineas[i]][0] +
 						Ue[0][node] * mult * norm
 				);
 				line_geometry.attributes.position.setY(
 					i,
 					verticei[1] * norm +
-						this.modifier[i][1] +
+						this.modifier[this.modifier_lineas[i]][1] +
 						Ue[1][node] * mult * norm
 				);
 				line_geometry.attributes.position.setZ(
 					i,
 					verticei[2] * norm +
-						this.modifier[i][2] +
+						this.modifier[this.modifier_lineas[i]][2] +
 						Ue[2][node] * mult * norm
 				);
 			}
@@ -120,13 +127,65 @@ class Element {
 	}
 	giveSecondVariableSolution(strain = false) {
 		this.dus = [];
-		for (const z of this.domain) {
-			const [J, dpz] = this.J(z);
-			const _J = math.inv(J);
-			const dpx = math.multiply(_J, dpz);
-			this.dus.push(math.multiply(this.Ue, math.transpose(dpx)));
-		}
+		try {
+			for (const z of this.domain) {
+				const [J, dpz] = this.J(z);
+				const _J = math.inv(J);
+				const dpx = math.multiply(_J, dpz);
+				this.dus.push(math.multiply(this.Ue, math.transpose(dpx)));
+			}
+		} catch (error) {}
 		if (strain) this.calculateStrain();
+	}
+	encontrarVertices() {
+		const res = [];
+		for (let j = 0; j < this.geometry.attributes.position.count; j++) {
+			const x = this.geometry.attributes.position.getX(j);
+			const y = this.geometry.attributes.position.getY(j);
+			const z = this.geometry.attributes.position.getZ(j);
+			const X = [x, y, z];
+			let im = this.inverseMapping(X);
+			for (let i = 0; i < this.domain.length; i++) {
+				let p = this.domain[i];
+				let resta = math.sum(
+					...[
+						(im[0] - p[0]) ** 2,
+						(im[1] - p[1]) ** 2,
+						(im[2] - p[2]) ** 2,
+					]
+				);
+				if (resta < 0.0001) {
+					res.push(i);
+					break;
+				}
+			}
+		}
+		return res;
+	}
+	encontrarVerticesLineas() {
+		const res = [];
+		for (let j = 0; j < this.line_geometry.attributes.position.count; j++) {
+			const x = this.line_geometry.attributes.position.getX(j);
+			const y = this.line_geometry.attributes.position.getY(j);
+			const z = this.line_geometry.attributes.position.getZ(j);
+			const X = [x, y, z];
+			let im = this.inverseMapping(X);
+			for (let i = 0; i < this.domain.length; i++) {
+				let p = this.domain[i];
+				let resta = math.sum(
+					...[
+						(im[0] - p[0]) ** 2,
+						(im[1] - p[1]) ** 2,
+						(im[2] - p[2]) ** 2,
+					]
+				);
+				if (resta < 0.0001) {
+					res.push(i);
+					break;
+				}
+			}
+		}
+		return res;
 	}
 	setMaxDispNode(colorMode, strain) {
 		this.colors = Array(this.order.length).fill(0.0);
@@ -206,12 +265,16 @@ class Brick extends Element3D {
 			[1, 1, 1],
 			[-1, 1, 1],
 		];
-		this.geometry = new THREE.BoxGeometry(1);
+		this.geometry = new THREE.BoxGeometry(1, 1, 1);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.order = [
 			6, 2, 5, 1, 3, 7, 0, 4, 3, 2, 7, 6, 4, 5, 0, 1, 7, 6, 4, 5, 2, 3, 1,
 			0,
 		];
-		this.line_order = [0, 1, 2, 3, 0, 4, 5, 1, 5, 6, 2, 6, 7, 3];
+		this.line_order = [
+			3, 7, 6, 2, 4, 0, 1, 5, 7, 4, 6, 7, 4, 5, 5, 6, 2, 1, 3, 2, 1, 0, 0,
+			3,
+		];
 		this.modifier = [
 			[0.0, 0.0, 0.0],
 			[0.0, 0.0, 0.0],
@@ -238,6 +301,7 @@ class Brick extends Element3D {
 			[0.0, 0.0, 0.0],
 			[0.0, 0.0, 0.0],
 		];
+		this.modifier_lineas = new Array(this.modifier.length).fill(0);
 	}
 	psi(_z) {
 		const z = _z[0];
@@ -316,8 +380,9 @@ class Tetrahedral extends Element3D {
 			[0.0, 0.0, 1.0],
 		];
 		this.geometry = new THREE.TetrahedronGeometry(1);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.order = [1, 0, 2, 3, 2, 0, 3, 0, 1, 3, 1, 2];
-		this.line_order = [0, 1, 2, 0, 3, 1, 3, 2];
+		this.line_order = [2, 0, 3, 0, 0, 1, 3, 1, 1, 2, 2, 3];
 		this.modifier = [
 			[0.0, 0.0, 0.0],
 			[0.0, 0.0, 0.0],
@@ -332,6 +397,7 @@ class Tetrahedral extends Element3D {
 			[0.0, 0.0, 0.0],
 			[0.0, 0.0, 0.0],
 		];
+		this.modifier_lineas = new Array(this.modifier.length).fill(0);
 	}
 	psi(_z) {
 		let x = _z[0];
@@ -360,12 +426,20 @@ class Lineal extends Element3D {
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
 		this.geometry = new THREE.BoxGeometry(1);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.order = [
 			1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0,
 			0,
 		];
-		this.line_order = [0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0];
+		this.line_order = [
+			0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+			0,
+		];
 		const h = tama / 10.0;
+		this.modifier_lineas = [
+			4, 5, 0, 1, 7, 6, 3, 2, 5, 7, 0, 5, 7, 2, 2, 0, 1, 3, 4, 1, 3, 6, 6,
+			4,
+		];
 		this.modifier = [
 			[0.0, h, h],
 			[0.0, h, h],
@@ -414,6 +488,7 @@ class Triangular extends Element3D {
 		}
 		this.coords_o = c;
 		this.geometry = new THREE.BoxGeometry(1);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = [
 			[0, 0],
 			[1, 0],
@@ -423,11 +498,18 @@ class Triangular extends Element3D {
 			2, 2, 1, 1, 2, 2, 0, 0, 2, 2, 2, 2, 0, 1, 0, 1, 2, 2, 0, 1, 2, 2, 1,
 			0,
 		];
-		this.line_order = [0, 1, 2, 2, 0, 0, 1, 1, 1, 2, 2, 2, 2, 2];
+		this.line_order = [
+			2, 2, 2, 2, 0, 0, 1, 1, 2, 0, 2, 2, 0, 1, 1, 2, 2, 1, 2, 2, 1, 0, 0,
+			2,
+		];
 		const h = tama / 20.0;
 		const orderori = [
 			6, 2, 5, 1, 3, 7, 0, 4, 3, 2, 7, 6, 4, 5, 0, 1, 7, 6, 4, 5, 2, 3, 1,
 			0,
+		];
+		this.modifier_lineas = [
+			4, 5, 0, 1, 7, 6, 3, 2, 5, 7, 0, 5, 7, 2, 2, 0, 1, 3, 4, 1, 3, 6, 6,
+			4,
 		];
 		this.modifier = [
 			[0.0, 0.0, 0.0],
@@ -462,10 +544,10 @@ class Triangular extends Element3D {
 		}
 	}
 	psi(_z) {
-		return [1.0 - z[0] - z[1], z[0], z[1]];
+		return [1.0 - _z[0] - _z[1], _z[0], _z[1]];
 	}
 	dpsi(_z) {
-		kernell = z[0] - z[0];
+		const kernell = _z[0] - _z[0];
 		return [
 			[-1.0 * (1 + kernell), -1.0 * (1 + kernell)],
 			[1.0 * (1 + kernell), 0.0 * (1 + kernell)],
@@ -487,6 +569,7 @@ class Quadrilateral extends Element3D {
 		}
 		this.coords_o = c;
 		this.geometry = new THREE.BoxGeometry(1);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.order = [
 			2, 2, 1, 1, 3, 3, 0, 0, 3, 2, 3, 2, 0, 1, 0, 1, 3, 2, 0, 1, 2, 3, 1,
 			0,
@@ -497,7 +580,14 @@ class Quadrilateral extends Element3D {
 			[1, 1],
 			[0, 1],
 		];
-		this.line_order = [0, 1, 2, 3, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3];
+		this.line_order = [
+			3, 3, 2, 2, 0, 0, 1, 1, 3, 0, 2, 3, 0, 1, 1, 2, 2, 1, 3, 2, 1, 0, 0,
+			3,
+		];
+		this.modifier_lineas = [
+			4, 5, 0, 1, 7, 6, 3, 2, 5, 7, 0, 5, 7, 2, 2, 0, 1, 3, 4, 1, 3, 6, 6,
+			4,
+		];
 		const h = tama / 20.0;
 		const orderori = [
 			6, 2, 5, 1, 3, 7, 0, 4, 3, 2, 7, 6, 4, 5, 0, 1, 7, 6, 4, 5, 2, 3, 1,

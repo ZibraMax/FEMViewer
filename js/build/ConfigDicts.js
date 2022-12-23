@@ -66,6 +66,7 @@ const CONFIG_DICT = {
 	PlaneStrain: PlaneStrain,
 	PlaneStressNonLocalSparse: PlaneStressNonLocalSparse,
 	PlaneStressSparse: PlaneStressSparse,
+	NonLocalElasticityFromTensor: Elasticity,
 };
 
 export { CONFIG_DICT };

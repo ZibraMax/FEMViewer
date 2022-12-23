@@ -553,6 +553,9 @@ class FEMViewer {
 
 	init(animate = true) {
 		this.animate = animate;
+		if (!this.config_dict["displacements"]) {
+			this.animate = false;
+		}
 		this.createElements();
 		this.createLines();
 
@@ -569,7 +572,10 @@ class FEMViewer {
 			this.bufferLines,
 			true
 		);
-		this.contour = new THREE.Line(this.mergedLineGeometry, line_material);
+		this.contour = new THREE.LineSegments(
+			this.mergedLineGeometry,
+			line_material
+		);
 		// this.model.add(this.contour);
 
 		this.mesh = new THREE.Mesh(this.mergedGeometry, this.material);
@@ -799,6 +805,7 @@ class FEMViewer {
 	}
 
 	createElements() {
+		this.bufferGeometries = [];
 		this.elements = new Array(this.dictionary.length).fill(0.0);
 		for (let i = 0; i < this.dictionary.length; i++) {
 			const gdls = this.dictionary[i];
@@ -836,16 +843,9 @@ class FEMViewer {
 		}
 	}
 	createLines() {
+		this.bufferLines = [];
 		for (const e of this.elements) {
-			const points = [];
-			const count = e.line_order.length;
-			for (let j = 0; j < count; j++) {
-				const node = e.line_order[j];
-				const verticei = e.coords[node];
-				points.push(new THREE.Vector3(...verticei));
-			}
-			const line_geo = new THREE.BufferGeometry().setFromPoints(points);
-			this.bufferLines.push(line_geo);
+			this.bufferLines.push(e.line_geometry);
 		}
 	}
 	onDocumentMouseDown(event) {
