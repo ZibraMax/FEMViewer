@@ -1,6 +1,7 @@
 const GENERAL = {
 	calculateStrain: false,
 	displacements: false,
+	props: [],
 };
 const Elasticity = {
 	calculateStrain: true,
@@ -13,6 +14,7 @@ const Elasticity = {
 		"\\(\\varepsilon_{xz}\\)": "4",
 		"\\(\\varepsilon_{yz}\\)": "5",
 	},
+	props: [],
 };
 const PlaneStress = {
 	calculateStrain: true,
@@ -22,6 +24,7 @@ const PlaneStress = {
 		"\\(\\varepsilon_y\\)": "1",
 		"\\(\\varepsilon_{xy}\\)": "2",
 	},
+	props: [],
 };
 
 const PlaneStressSparse = {
@@ -32,6 +35,7 @@ const PlaneStressSparse = {
 		"\\(\\varepsilon_y\\)": "1",
 		"\\(\\varepsilon_{xy}\\)": "2",
 	},
+	props: ["E1", "E2", "G12", "v12", "t", "rho"],
 };
 
 const PlaneStressNonLocalSparse = {
@@ -42,6 +46,7 @@ const PlaneStressNonLocalSparse = {
 		"\\(\\varepsilon_y\\)": "1",
 		"\\(\\varepsilon_{xy}\\)": "2",
 	},
+	props: [],
 };
 const PlaneStrain = {
 	calculateStrain: true,
@@ -51,6 +56,7 @@ const PlaneStrain = {
 		"\\(\\varepsilon_y\\)": "1",
 		"\\(\\varepsilon_{xy}\\)": "2",
 	},
+	props: [],
 };
 
 const CONFIG_DICT = {

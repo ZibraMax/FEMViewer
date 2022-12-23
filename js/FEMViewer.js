@@ -72,6 +72,7 @@ class FEMViewer {
 		this.border_elements = [];
 		this.config_dict = CONFIG_DICT["GENERAL"];
 		this.dimensions = ["x", "y", "z"];
+		this.histogram = document.getElementById("histogram");
 
 		// THREE JS
 		this.renderer = new THREE.WebGLRenderer({
@@ -106,8 +107,27 @@ class FEMViewer {
 		this.settings();
 	}
 	modalManager() {
-		activateModal();
+		activateModal("myModal");
 		this.gui.close();
+	}
+	modalManager2() {
+		activateModal("myModal2");
+		this.createHistogram();
+		this.gui.close();
+	}
+	createHistogram() {
+		let data = [];
+		for (const p of Object.keys(this.element_properties)) {
+			let trace = {
+				x: this.element_properties[p],
+				type: "histogram",
+				name: p,
+			};
+			data.push(trace);
+		}
+		Plotly.newPlot(this.histogram, data, {
+			margin: { t: 0 },
+		});
 	}
 
 	async loadJSON(json_path) {
@@ -201,6 +221,7 @@ class FEMViewer {
 			.listen()
 			.onChange(this.reload.bind(this));
 		this.gui.add(this, "modalManager").name("Load JSON File");
+		this.gui.add(this, "modalManager2").name("Show histogram");
 		this.gui.add(this.gh, "visible").name("Axis");
 		this.gui.add(this, "rot").name("Rotation").listen();
 
@@ -670,7 +691,11 @@ class FEMViewer {
 					CONFIG_DICT[jsondata["properties"]["problem"]];
 			}
 		}
-
+		this.element_properties = {};
+		for (const p of this.config_dict["props"]) {
+			this.element_properties[p] = jsondata["properties"][p];
+		}
+		console.log(this);
 		if (this.config_dict["displacements"]) {
 			this.sadguib.disable();
 		} else {
