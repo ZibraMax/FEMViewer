@@ -475,6 +475,18 @@ class Lineal extends Element3D {
 	}
 }
 
+class LinealO2 extends Lineal {
+	constructor(coords, gdls, tama) {
+		super(coords, gdls, tama);
+	}
+	psi(_z) {
+		return 0.0;
+	}
+	dpsi(_z) {
+		return 0.0;
+	}
+}
+
 class Triangular extends Element3D {
 	order;
 	line_order;
@@ -783,4 +795,5 @@ export {
 	TriangularO2,
 	Quadrilateral,
 	Serendipity,
+	LinealO2,
 };

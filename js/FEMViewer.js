@@ -15,6 +15,7 @@ import {
 	TriangularO2,
 	Quadrilateral,
 	Serendipity,
+	LinealO2,
 } from "./build/Elements.js";
 
 const types = {
@@ -27,6 +28,7 @@ const types = {
 	T2V: TriangularO2,
 	C1V: Quadrilateral,
 	C2V: Serendipity,
+	L2V: LinealO2,
 };
 
 class FEMViewer {
