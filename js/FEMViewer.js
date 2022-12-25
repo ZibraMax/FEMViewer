@@ -511,6 +511,19 @@ class FEMViewer {
 		}
 	}
 
+	addExamples(file_paths) {
+		this.gui
+			.add(this, "filename", file_paths)
+			.name("Examples")
+			.listen()
+			.onChange(this.changeExample.bind(this));
+	}
+	changeExample() {
+		console.log(this.filename);
+		this.json_path = this.filename;
+		this.reset();
+	}
+
 	zoomExtents() {
 		let vFoV = this.camera.getEffectiveFOV();
 		let hFoV = this.camera.fov * this.camera.aspect;

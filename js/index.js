@@ -102,3 +102,22 @@ function onDocumentKeyDown(event) {
 }
 showPage();
 document.addEventListener("keydown", onDocumentKeyDown, false);
+
+async function getFiles(path) {
+	const response = await fetch(path);
+	const jsondata = await response.json();
+	const tree = jsondata["tree"];
+	const file_paths = [];
+	for (const file of tree) {
+		if (file["path"].includes("Examples/Mesh_tests")) {
+			file_paths.push(
+				"https://raw.githubusercontent.com/ZibraMax/FEM/master/" +
+					file["path"]
+			);
+		}
+	}
+	O.addExamples(file_paths);
+}
+getFiles(
+	"https://api.github.com/repos/ZibraMax/FEM/git/trees/master?recursive=1"
+);
