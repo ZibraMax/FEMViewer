@@ -150,6 +150,7 @@ class FEMViewer {
 		}
 		this.model.remove(this.mesh);
 		this.model.remove(this.contour);
+		this.config_dict = CONFIG_DICT["GENERAL"];
 
 		this.solution_as_displacement = false;
 
