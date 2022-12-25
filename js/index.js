@@ -109,7 +109,10 @@ async function getFiles(path) {
 	const tree = jsondata["tree"];
 	const file_paths = [];
 	for (const file of tree) {
-		if (file["path"].includes("Examples/Mesh_tests")) {
+		if (
+			file["path"].includes("Examples/Mesh_tests") &&
+			file["path"].includes(".json")
+		) {
 			file_paths.push(
 				"https://raw.githubusercontent.com/ZibraMax/FEM/master/" +
 					file["path"]
