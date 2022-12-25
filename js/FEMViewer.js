@@ -151,6 +151,8 @@ class FEMViewer {
 		this.model.remove(this.mesh);
 		this.model.remove(this.contour);
 
+		this.solution_as_displacement = false;
+
 		this.mergedGeometry.dispose();
 		this.mergedLineGeometry.dispose();
 		this.mesh.geometry.dispose();
