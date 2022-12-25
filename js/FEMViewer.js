@@ -52,6 +52,7 @@ class FEMViewer {
 			magnif = 0;
 		}
 		// FEM
+		this.corriendo = false;
 		this.initial_zoom = iz;
 		this.solution_as_displacement = false;
 		this.axis = axis;
@@ -172,6 +173,9 @@ class FEMViewer {
 		this.types = [];
 		this.magnif = 0.0;
 		this.max_abs_disp = undefined;
+		this.border_elements = [];
+		delete this.mergedGeometry;
+		delete this.mergedLineGeometry;
 	}
 
 	settings() {
@@ -375,7 +379,6 @@ class FEMViewer {
 	}
 
 	update() {
-		requestAnimationFrame(this.update.bind(this));
 		this.delta += this.clock.getDelta();
 		if (this.delta > this.interval) {
 			// The draw or time dependent code are here
@@ -383,6 +386,7 @@ class FEMViewer {
 
 			this.delta = this.delta % this.interval;
 		}
+		requestAnimationFrame(this.update.bind(this));
 	}
 
 	resizeRendererToDisplaySize() {
@@ -602,7 +606,10 @@ class FEMViewer {
 		this.zoomExtents();
 		this.updateLines();
 		window.addEventListener("resize", this.render.bind(this));
-		requestAnimationFrame(this.update.bind(this));
+		if (!this.corriendo) {
+			this.corriendo = true;
+			requestAnimationFrame(this.update.bind(this));
+		}
 	}
 	setStep(step) {
 		this.step = step;
