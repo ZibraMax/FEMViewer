@@ -521,7 +521,7 @@ class FEMViewer {
 	changeExample() {
 		console.log(this.filename);
 		this.json_path = this.filename;
-		this.reset();
+		this.reload();
 	}
 
 	zoomExtents() {
