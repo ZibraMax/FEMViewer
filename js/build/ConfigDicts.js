@@ -61,12 +61,21 @@ const PlaneStrain = {
 
 const CONFIG_DICT = {
 	GENERAL: GENERAL,
+	EDO1D: GENERAL,
+	EulerBernoulliBeam: GENERAL,
+	EulerBernoulliBeamNonLineal: GENERAL,
+	Heat1D: GENERAL,
+	Heat2D: GENERAL,
+	Torsion2D: GENERAL,
+	NonLinealSimpleEquation: GENERAL,
+	PlaneStrainSparse: PlaneStress,
+	PlaneStressOrthotropic: PlaneStress,
 	PlaneStress: PlaneStress,
 	Elasticity: Elasticity,
+	ElasticityFromTensor: Elasticity,
 	PlaneStrain: PlaneStrain,
 	PlaneStressNonLocalSparse: PlaneStressNonLocalSparse,
 	PlaneStressSparse: PlaneStressSparse,
 	NonLocalElasticityFromTensor: Elasticity,
 };
-
 export { CONFIG_DICT };
