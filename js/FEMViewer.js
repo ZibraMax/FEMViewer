@@ -674,6 +674,12 @@ class FEMViewer {
 				}
 			}
 		} else {
+			if (jsondata["solutions"].length == 0) {
+				this.solutions = [
+					Array(this.nodes.length * this.nvn).fill(0.0),
+				];
+				this.solutions_info = [{ info: "Not solved" }];
+			}
 			for (let i = 0; i < jsondata["solutions"].length; i++) {
 				let solution = jsondata["solutions"][i];
 

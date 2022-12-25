@@ -637,7 +637,7 @@ class Quadrilateral extends Element3D {
 			}
 		}
 	}
-	psi(_z) {
+	psi(z) {
 		return [
 			0.25 * (1.0 - z[0]) * (1.0 - z[1]),
 			0.25 * (1.0 + z[0]) * (1.0 - z[1]),
@@ -645,7 +645,7 @@ class Quadrilateral extends Element3D {
 			0.25 * (1.0 - z[0]) * (1.0 + z[1]),
 		];
 	}
-	dpsi(_z) {
+	dpsi(z) {
 		return [
 			[0.25 * (z[1] - 1.0), 0.25 * (z[0] - 1.0)],
 			[-0.25 * (z[1] - 1.0), -0.25 * (z[0] + 1.0)],
