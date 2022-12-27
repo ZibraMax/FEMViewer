@@ -67,6 +67,7 @@ if (!vis_param) {
 const file_input = document.getElementById("json-file-input");
 
 function openFiles(evt) {
+	document.getElementById("loader").style.display = "";
 	var files = evt.target.files;
 
 	for (var i = 0, len = files.length; i < len; i++) {
@@ -78,6 +79,8 @@ function openFiles(evt) {
 			return function (e) {
 				const json_txt = e.target.result;
 				const jsondata = JSON.parse(json_txt);
+				document.getElementById("loader").style.display = "none";
+
 				O.reset();
 				O.parseJSON(jsondata);
 				O.init(false);

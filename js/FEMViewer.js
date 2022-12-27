@@ -53,10 +53,15 @@ class FEMViewer {
 		}
 		// FEM
 		this.corriendo = false;
+		this.max_color_value = 0;
+		this.min_color_value = 0;
 		this.initial_zoom = iz;
 		this.solution_as_displacement = false;
 		this.axis = axis;
 		this.canvas = canvas;
+		this.max_color_value_slider = undefined;
+		this.min_color_value_slider = undefined;
+
 		this.rot = rot;
 		this.nodes = [];
 		this.nvn = -1;
@@ -312,11 +317,18 @@ class FEMViewer {
 		await this.loadJSON(this.filename);
 		this.init(false);
 	}
-	updateColorVariable() {
+	updateLut() {
 		this.lut.setColorMap(this.colormap);
 		const map = this.sprite.material.map;
 		this.lut.updateCanvas(map.image);
 		map.needsUpdate = true;
+		this.lut.setMax(this.max_color_value);
+		this.lut.setMin(this.min_color_value);
+		this.updateMaterial();
+		this.updateMeshCoords();
+		this.updateGeometry();
+	}
+	updateColorVariable() {
 		const co = this.colorOptions;
 		if (co != "nocolor") {
 			this.colors = true;
@@ -337,12 +349,20 @@ class FEMViewer {
 			max_disp = Math.max(max_disp, ...variable);
 			min_disp = Math.min(min_disp, ...variable);
 		}
+		this.max_color_value = max_disp;
+		this.min_color_value = min_disp;
+		this.max_color_value_slider.max(max_disp);
+		this.max_color_value_slider.min(min_disp);
+		this.max_color_value_slider.step(
+			(this.max_color_value - this.min_color_value) / 1000
+		);
+		this.min_color_value_slider.step(
+			(this.max_color_value - this.min_color_value) / 1000
+		);
 
-		this.lut.setMax(max_disp);
-		this.lut.setMin(min_disp);
-		this.updateMaterial();
-		this.updateMeshCoords();
-		this.updateGeometry();
+		this.min_color_value_slider.max(max_disp);
+		this.min_color_value_slider.min(min_disp);
+		this.updateLut();
 	}
 	updateCamera() {
 		this.camera.updateProjectionMatrix();
@@ -526,7 +546,6 @@ class FEMViewer {
 			.onChange(this.changeExample.bind(this));
 	}
 	changeExample() {
-		console.log(this.filename);
 		this.json_path = this.filename;
 		this.reload();
 	}
@@ -625,9 +644,7 @@ class FEMViewer {
 		this.norm = 1.0 / math.max(jsondata["nodes"].flat());
 		// console.log(norm);
 		this.nodes = [];
-		this.nodes.push(...jsondata["nodes"]);
-		this.nodes_o = [];
-		this.nodes_o.push(...jsondata["nodes"]);
+		this.nodes = jsondata["nodes"];
 
 		// for (let i = 0; i < this.nodes.length; i++) {
 		// 	const node = this.nodes[i];
@@ -640,7 +657,6 @@ class FEMViewer {
 		for (let i = 0; i < this.nodes.length; i++) {
 			for (let j = this.nodes[i].length; j < 3; j++) {
 				this.nodes[i].push(0.0); //Coordinate completition
-				this.nodes_o[i].push(0.0); //Coordinate completition
 			}
 		}
 		this.dictionary = [];
@@ -649,7 +665,7 @@ class FEMViewer {
 		this.solutions = [];
 		let original_dict = jsondata["dictionary"];
 		this.dictionary.push(...original_dict);
-		this.types.push(...jsondata["types"]);
+		this.types = jsondata["types"];
 		if (jsondata["border_elements"]) {
 			this.border_elements.push(...jsondata["border_elements"]);
 			this.dictionary = [];
@@ -749,6 +765,7 @@ class FEMViewer {
 			.add(this, "colorOptions", {
 				"No color": "nocolor",
 				"\\(|U|\\)": "dispmag",
+				"Scaled Jacobian": "scaled_jac",
 				...dict,
 			})
 			.name("Show color")
@@ -764,7 +781,17 @@ class FEMViewer {
 			])
 			.listen()
 			.name("Colormap")
-			.onChange(this.updateColorVariable.bind(this));
+			.onChange(this.updateLut.bind(this));
+		this.max_color_value_slider = this.guifolder
+			.add(this, "max_color_value", 0.0, 1.0)
+			.name("Max solution value")
+			.listen()
+			.onChange(this.updateLut.bind(this));
+		this.min_color_value_slider = this.guifolder
+			.add(this, "min_color_value", 0.0, 1.0)
+			.name("Min solution value")
+			.listen()
+			.onChange(this.updateLut.bind(this));
 		this.guifolder
 			.add(this, "step", solutions_info_str)
 			.onChange(this.updateSolution.bind(this))
