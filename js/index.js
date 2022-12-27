@@ -6,7 +6,7 @@ let axis = 6;
 let zoom = 1;
 let lines = true;
 
-let path_str = "I	";
+let path_str = "I";
 let queryString = window.location.search;
 let vis_param = 0;
 if (queryString != "") {
@@ -79,11 +79,11 @@ function openFiles(evt) {
 			return function (e) {
 				const json_txt = e.target.result;
 				const jsondata = JSON.parse(json_txt);
-				document.getElementById("loader").style.display = "none";
 
 				O.reset();
 				O.parseJSON(jsondata);
 				O.init(false);
+				document.getElementById("loader").style.display = "none";
 			};
 		})(file);
 
@@ -94,6 +94,9 @@ file_input.addEventListener("change", openFiles);
 console.log(O);
 function showPage() {
 	document.getElementById("loader").style.display = "none";
+}
+function beforeLoad() {
+	document.getElementById("loader").style.display = "";
 }
 function onDocumentKeyDown(event) {
 	const keyCode = event.which;
@@ -130,7 +133,7 @@ async function getFiles(paths) {
 			}
 		}
 	}
-	O.addExamples(file_paths);
+	O.addExamples(file_paths, beforeLoad, showPage);
 }
 getFiles([
 	"https://api.github.com/repos/ZibraMax/FEM/git/trees/master?recursive=1",

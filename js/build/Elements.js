@@ -110,7 +110,7 @@ class Element {
 		let p = this.psi(_z);
 		return [math.multiply(p, this.coords_o), p];
 	}
-	scaledJacobian() {
+	async scaledJacobian() {
 		let max_j = -Infinity;
 		let min_j = Infinity;
 		for (const z of this.Z) {

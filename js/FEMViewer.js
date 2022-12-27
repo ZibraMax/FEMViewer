@@ -62,6 +62,9 @@ class FEMViewer {
 		this.max_color_value_slider = undefined;
 		this.min_color_value_slider = undefined;
 
+		this.before_load = () => {};
+		this.after_load = () => {};
+
 		this.rot = rot;
 		this.nodes = [];
 		this.nvn = -1;
@@ -312,10 +315,17 @@ class FEMViewer {
 		}
 	}
 
-	async reload() {
+	reload() {
+		this.animate = false;
 		this.reset();
-		await this.loadJSON(this.filename);
-		this.init(false);
+		this.before_load();
+		console.log("Empezando a cargar!");
+		const resp = this.loadJSON(this.filename);
+		resp.then(() => {
+			console.log("Cargado!");
+			this.init(false);
+			this.after_load();
+		});
 	}
 	updateLut() {
 		this.lut.setColorMap(this.colormap);
@@ -538,7 +548,9 @@ class FEMViewer {
 		}
 	}
 
-	addExamples(file_paths) {
+	addExamples(file_paths, b, a) {
+		this.before_load = b;
+		this.after_load = a;
 		this.gui
 			.add(this, "filename", file_paths)
 			.name("Examples")
