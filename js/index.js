@@ -6,7 +6,7 @@ let axis = 6;
 let zoom = 1;
 let lines = true;
 
-let path_str = "";
+let path_str = "I	";
 let queryString = window.location.search;
 let vis_param = 0;
 if (queryString != "") {
@@ -45,7 +45,7 @@ if (queryString != "") {
 	}
 }
 
-let path = `./resources/I.json`;
+let path = `./resources/${path_str}.json`;
 if (path_str.startsWith("https://")) {
 	path = path_str;
 }
@@ -106,24 +106,33 @@ function onDocumentKeyDown(event) {
 showPage();
 document.addEventListener("keydown", onDocumentKeyDown, false);
 
-async function getFiles(path) {
-	const response = await fetch(path);
-	const jsondata = await response.json();
-	const tree = jsondata["tree"];
+async function getFiles(paths) {
 	const file_paths = [];
-	for (const file of tree) {
-		if (
-			file["path"].includes("Examples/Mesh_tests") &&
-			file["path"].includes(".json")
-		) {
-			file_paths.push(
-				"https://raw.githubusercontent.com/ZibraMax/FEM/master/" +
-					file["path"]
-			);
+	for (const path of paths) {
+		const response = await fetch(path);
+		const jsondata = await response.json();
+		const tree = jsondata["tree"];
+		let repo = path.split("/")[4] + "/" + path.split("/")[5];
+		let rama = path.split("/")[8].split("?")[0];
+		for (const file of tree) {
+			if (
+				!file["path"].includes("vscode") &&
+				file["path"].includes(".json")
+			) {
+				file_paths.push(
+					"https://raw.githubusercontent.com/" +
+						repo +
+						"/" +
+						rama +
+						"/" +
+						file["path"]
+				);
+			}
 		}
 	}
 	O.addExamples(file_paths);
 }
-getFiles(
-	"https://api.github.com/repos/ZibraMax/FEM/git/trees/master?recursive=1"
-);
+getFiles([
+	"https://api.github.com/repos/ZibraMax/FEM/git/trees/master?recursive=1",
+	"https://api.github.com/repos/ZibraMax/FEMViewer/git/trees/main?recursive=1",
+]);
