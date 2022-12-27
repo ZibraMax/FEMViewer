@@ -12,6 +12,21 @@ class Element {
 		this.nvn = gdls.length;
 		this.scaledJacobian = undefined;
 	}
+
+	get _xcenter() {
+		let x = 0;
+		let y = 0;
+		let z = 0;
+		let n = this.coords.length;
+		for (let i = 0; i < n; i++) {
+			let c = this.coords[i];
+			x += c[0];
+			y += c[1];
+			z += c[2];
+		}
+		let center = [x / n, y / n, z / n];
+		return center;
+	}
 	setUe(U, svs = true) {
 		this.Ue = [];
 		for (const v of this.gdls) {

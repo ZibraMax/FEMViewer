@@ -5,6 +5,7 @@ import * as BufferGeometryUtils from "./build/BufferGeometryUtils.js";
 import { AxisGridHelper } from "./build/minigui.js";
 import { Lut } from "./build/Lut.js";
 import { CONFIG_DICT } from "./build/ConfigDicts.js";
+import { Geometree, Quadrant3D } from "./build/Octree.js";
 import {
 	Brick,
 	BrickO2,
@@ -64,7 +65,6 @@ class FEMViewer {
 
 		this.before_load = () => {};
 		this.after_load = () => {};
-
 		this.rot = rot;
 		this.nodes = [];
 		this.nvn = -1;
@@ -853,6 +853,23 @@ class FEMViewer {
 			math.max(secon_coords[1].flat()) - math.min(secon_coords[1].flat());
 		let sizez =
 			math.max(secon_coords[2].flat()) - math.min(secon_coords[2].flat());
+
+		let centerx =
+			(math.max(secon_coords[0].flat()) +
+				math.min(secon_coords[0].flat())) /
+			2;
+		let centery =
+			(math.max(secon_coords[1].flat()) +
+				math.min(secon_coords[1].flat())) /
+			2;
+		let centerz =
+			(math.max(secon_coords[2].flat()) +
+				math.min(secon_coords[2].flat())) /
+			2;
+		let center = [centerx, centery, centerz];
+		let dimens = [sizex / 2, sizey / 2, sizez / 2];
+		let bounding = new Quadrant3D(center, dimens);
+		this.OctTree = new Geometree(bounding);
 		for (let i = 0; i < this.nodes.length; i++) {
 			this.nodes[i][0] -= sizex / 2;
 			this.nodes[i][1] -= sizey / 2;
@@ -913,11 +930,14 @@ class FEMViewer {
 			for (const node of gdls) {
 				coords.push(this.nodes[node]);
 			}
+
 			this.elements[i] = new types[this.types[i]](
 				coords,
 				egdls,
 				this.size * this.norm
 			);
+			let p = { _xcenter: this.elements[i]._xcenter.slice(), id: i };
+			this.OctTree.add_point(p);
 			const colors = [];
 			for (
 				let j = 0;
