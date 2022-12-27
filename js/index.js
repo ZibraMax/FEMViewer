@@ -6,7 +6,7 @@ let axis = 6;
 let zoom = 1;
 let lines = true;
 
-let path_str = "I";
+let path_str = "femur_solo_bordes";
 let queryString = window.location.search;
 let vis_param = 0;
 if (queryString != "") {
@@ -55,8 +55,8 @@ const canvas = document.getElementById("model-view");
 const O = new FEMViewer(canvas, magnif, rot, axis == 1, zoom);
 O.draw_lines = lines;
 await O.loadJSON(path);
+O.step = mode;
 O.init();
-O.setStep(mode);
 document.addEventListener("visibilitychange", (e) =>
 	O.handleVisibilityChange(e)
 );

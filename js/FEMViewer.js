@@ -94,7 +94,7 @@ class FEMViewer {
 		this.renderer.autoClear = false;
 
 		this.delta = 0;
-		this.interval = 1 / 120;
+		this.interval = 1 / 60;
 		this.clock = new THREE.Clock();
 		this.bufferGeometries = [];
 		this.bufferLines = [];
@@ -126,6 +126,11 @@ class FEMViewer {
 		this.createHistogram();
 		this.gui.close();
 	}
+	modalManager3() {
+		activateModal("myModal2");
+		this.createHistogram2();
+		this.gui.close();
+	}
 	createHistogram() {
 		let data = [];
 		for (const p of Object.keys(this.element_properties)) {
@@ -136,6 +141,20 @@ class FEMViewer {
 			};
 			data.push(trace);
 		}
+		Plotly.newPlot(this.histogram, data, {
+			margin: { t: 0 },
+		});
+	}
+	createHistogram2() {
+		let data = [];
+		let trace = {
+			x: this.elements.map((e) => {
+				return e.sJ;
+			}),
+			type: "histogram",
+			name: "Scaled Jacobian",
+		};
+		data.push(trace);
 		Plotly.newPlot(this.histogram, data, {
 			margin: { t: 0 },
 		});
@@ -238,7 +257,10 @@ class FEMViewer {
 			.listen()
 			.onChange(this.reload.bind(this));
 		this.gui.add(this, "modalManager").name("Load JSON File");
-		this.gui.add(this, "modalManager2").name("Show histogram");
+		this.gui.add(this, "modalManager2").name("Show properties histogram");
+		this.gui
+			.add(this, "modalManager3")
+			.name("Show scaled jacobian histogram");
 		this.gui.add(this.gh, "visible").name("Axis");
 		this.gui.add(this, "rot").name("Rotation").listen();
 
@@ -507,7 +529,7 @@ class FEMViewer {
 		this.model.rotation.z += 0.005;
 	}
 
-	render(time) {
+	async render(time) {
 		if (typeof time == "number") {
 			time = time || 0;
 		} else {
@@ -604,7 +626,7 @@ class FEMViewer {
 		}
 	}
 
-	init(animate = true) {
+	async init(animate = true) {
 		this.animate = animate;
 		if (!this.config_dict["displacements"]) {
 			this.animate = false;
@@ -645,6 +667,7 @@ class FEMViewer {
 			requestAnimationFrame(this.update.bind(this));
 		}
 	}
+
 	setStep(step) {
 		this.step = step;
 		this.updateU();
@@ -760,7 +783,6 @@ class FEMViewer {
 		for (const p of this.config_dict["props"]) {
 			this.element_properties[p] = jsondata["properties"][p];
 		}
-		console.log(this);
 		if (this.config_dict["displacements"]) {
 			this.sadguib.disable();
 		} else {

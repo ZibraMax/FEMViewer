@@ -10,6 +10,7 @@ class Element {
 		this.gdls = gdls;
 		this.Ue = [];
 		this.nvn = gdls.length;
+		this.scaledJacobian = undefined;
 	}
 	setUe(U, svs = true) {
 		this.Ue = [];
@@ -110,7 +111,24 @@ class Element {
 		let p = this.psi(_z);
 		return [math.multiply(p, this.coords_o), p];
 	}
-	async scaledJacobian() {
+	async calculateJacobian() {
+		return new Promise((resolve) => {
+			let max_j = -Infinity;
+			let min_j = Infinity;
+			for (const z of this.Z) {
+				const [J, dpz] = this.J(z);
+				const j = math.det(J);
+				max_j = Math.max(max_j, j);
+				min_j = Math.min(min_j, j);
+			}
+			this.scaledJacobian = min_j / Math.abs(max_j);
+			resolve("resolved!");
+		});
+	}
+	get sJ() {
+		if (this.scaledJacobian) {
+			return this.scaledJacobian;
+		}
 		let max_j = -Infinity;
 		let min_j = Infinity;
 		for (const z of this.Z) {
@@ -119,7 +137,8 @@ class Element {
 			max_j = Math.max(max_j, j);
 			min_j = Math.min(min_j, j);
 		}
-		this.sJ = min_j / Math.abs(max_j);
+		this.scaledJacobian = min_j / Math.abs(max_j);
+		return min_j / Math.abs(max_j);
 	}
 	inverseMapping(x0) {
 		let zi = [0.15, 0.15, 0.15];
@@ -353,7 +372,6 @@ class Brick extends Element3D {
 			0.17146776, 0.27434842, 0.43895748, 0.27434842, 0.17146776,
 			0.27434842, 0.17146776,
 		];
-		this.scaledJacobian();
 	}
 	psi(_z) {
 		const z = _z[0];
@@ -464,7 +482,6 @@ class Tetrahedral extends Element3D {
 			0.023088, 0.023088, 0.023088, 0.023088, 0.01857867, 0.01857867,
 			0.01857867, 0.01857867,
 		];
-		this.scaledJacobian();
 	}
 	psi(_z) {
 		let x = _z[0];
@@ -535,7 +552,6 @@ class Lineal extends Element3D {
 		];
 		this.Z = [[-0.77459667], [0], [0.77459667]];
 		this.W = [0.55555556, 0.88888889, 0.55555556];
-		this.scaledJacobian();
 	}
 	psi(_z) {
 		return 0.0;
@@ -639,7 +655,6 @@ class Triangular extends Element3D {
 			this.Z.push([X[i], Y[i]]);
 		}
 		this.W = [W0, W1, W1, W1, W2, W2, W2];
-		this.scaledJacobian();
 	}
 	psi(_z) {
 		return [1.0 - _z[0] - _z[1], _z[0], _z[1]];
@@ -737,7 +752,6 @@ class Quadrilateral extends Element3D {
 			0.30864198, 0.49382716, 0.30864198, 0.49382716, 0.79012346,
 			0.49382716, 0.30864198, 0.49382716, 0.30864198,
 		];
-		this.scaledJacobian();
 	}
 	psi(z) {
 		return [
