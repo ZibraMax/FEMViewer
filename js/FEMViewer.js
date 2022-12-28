@@ -206,6 +206,7 @@ class FEMViewer {
 	}
 
 	detectBorderElements() {
+		this.before_load();
 		this.visited = new Array(this.elements.length).fill(false);
 		console.log("Encontrando elementos de borde");
 		const e = this.OctTree.query_first_point_set()[0];
