@@ -1,5 +1,5 @@
 import * as THREE from "./three.module.js";
-
+import { add } from "./MATHJSESM/number.js";
 class Element {
 	coords;
 	gdls;
@@ -155,20 +155,20 @@ class Element {
 		this.scaledJacobian = min_j / Math.abs(max_j);
 		return min_j / Math.abs(max_j);
 	}
-	inverseMapping(x0) {
-		let zi = [0.15, 0.15, 0.15];
-		for (let i = 0; i < 100; i++) {
-			const xi = math.add(x0, math.multiply(this.T(zi)[0], -1));
-			const [J, dpz] = this.J(zi);
-			const _J = math.inv(J);
-			const dz = math.multiply(_J, xi);
-			zi = math.add(zi, dz);
-			if (math.sum(math.abs(dz)) < 0.0000001) {
-				return zi;
-			}
-		}
-		return zi;
-	}
+	// inverseMapping(x0) {
+	// 	let zi = [0.15, 0.15, 0.15];
+	// 	for (let i = 0; i < 100; i++) {
+	// 		const xi = math.add(x0, math.multiply(this.T(zi)[0], -1));
+	// 		const [J, dpz] = this.J(zi);
+	// 		const _J = math.inv(J);
+	// 		const dz = math.multiply(_J, xi);
+	// 		zi = math.add(zi, dz);
+	// 		if (math.sum(math.abs(dz)) < 0.0000001) {
+	// 			return zi;
+	// 		}
+	// 	}
+	// 	return zi;
+	// }
 	giveSecondVariableSolution(strain = false) {
 		this.dus = [];
 		try {
@@ -930,4 +930,6 @@ export {
 	Quadrilateral,
 	Serendipity,
 	LinealO2,
+	Element,
+	Element3D,
 };
