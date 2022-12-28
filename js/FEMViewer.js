@@ -204,6 +204,9 @@ class FEMViewer {
 		}
 		return [false, potential];
 	}
+	detectBorderElements2() {
+		this.calculate_border_elements_worker();
+	}
 
 	detectBorderElements() {
 		this.before_load();
@@ -353,7 +356,7 @@ class FEMViewer {
 			.add(this, "modalManager3")
 			.name("Show scaled jacobian histogram");
 		this.gui
-			.add(this, "detectBorderElements")
+			.add(this, "detectBorderElements2")
 			.name("Detect border elements");
 		this.gui.add(this.gh, "visible").name("Axis");
 		this.gui.add(this, "rot").name("Rotation").listen();
@@ -778,7 +781,9 @@ class FEMViewer {
 	calculate_jacobians_worker() {
 		console.log("Comenzó calculo de jacobianos");
 		let OBJ = this;
-		const myWorker = new Worker("./js/worker.js", { type: "module" });
+		const myWorker = new Worker("./js/worker_jacobianos.js", {
+			type: "module",
+		});
 		myWorker.postMessage([...OBJ.elements]);
 
 		myWorker.onmessage = function (msg) {
@@ -786,6 +791,24 @@ class FEMViewer {
 				OBJ.elements[i].scaledJacobian = msg.data[i];
 			}
 			console.log("Termino calculo de jacobianos");
+		};
+	}
+	calculate_border_elements_worker() {
+		console.log("Comenzó calculo de elementos de borde");
+		let OBJ = this;
+		const myWorker = new Worker("./js/worker_border_elements.js", {
+			type: "module",
+		});
+		myWorker.postMessage([
+			[...OBJ.elements],
+			OBJ.OctTree,
+			OBJ.min_search_radius,
+		]);
+
+		myWorker.onmessage = function (msg) {
+			const be = msg.data;
+			OBJ.updateBorderElements(be);
+			console.log("Termino calculo de elementos de borde");
 		};
 	}
 	setStep(step) {
