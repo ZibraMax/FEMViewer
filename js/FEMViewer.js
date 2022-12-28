@@ -358,6 +358,7 @@ class FEMViewer {
 		this.gui
 			.add(this, "detectBorderElements2")
 			.name("Detect border elements");
+		this.gui.add(this, "downloadAsJson").name("Donwload JSON file");
 		this.gui.add(this.gh, "visible").name("Axis");
 		this.gui.add(this, "rot").name("Rotation").listen();
 
@@ -793,6 +794,22 @@ class FEMViewer {
 			console.log("Termino calculo de jacobianos");
 		};
 	}
+
+	async downloadAsJson() {
+		const response = await fetch(this.json_path);
+		const jsondata = await response.json();
+		jsondata["border_elements"] = this.border_elements;
+		var dataStr =
+			"data:text/json;charset=utf-8," +
+			encodeURIComponent(JSON.stringify(jsondata));
+		var downloadAnchorNode = document.createElement("a");
+		downloadAnchorNode.setAttribute("href", dataStr);
+		downloadAnchorNode.setAttribute("download", this.filename + ".json");
+		document.body.appendChild(downloadAnchorNode); // required for firefox
+		downloadAnchorNode.click();
+		downloadAnchorNode.remove();
+	}
+
 	calculate_border_elements_worker() {
 		console.log("Comenzó calculo de elementos de borde");
 		let OBJ = this;
@@ -841,14 +858,14 @@ class FEMViewer {
 		this.types = [];
 		this.solutions_info = [];
 		this.solutions = [];
-		let original_dict = jsondata["dictionary"];
-		this.dictionary.push(...original_dict);
+		this.original_dict = jsondata["dictionary"];
+		this.dictionary.push(...this.original_dict);
 		this.types = jsondata["types"];
 		if (jsondata["border_elements"]) {
 			this.border_elements.push(...jsondata["border_elements"]);
 			this.dictionary = [];
 			for (const be of this.border_elements) {
-				this.dictionary.push(original_dict[be]);
+				this.dictionary.push(this.original_dict[be]);
 			}
 		}
 		if (!jsondata["solutions"]) {
