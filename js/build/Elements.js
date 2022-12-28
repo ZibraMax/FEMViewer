@@ -302,6 +302,7 @@ class Brick extends Element3D {
 	line_order;
 	constructor(coords, gdls) {
 		super(coords, gdls);
+		this.nfaces = 6;
 		this.coords_o = coords;
 		this.domain = [
 			[-1, -1, -1],
@@ -455,8 +456,10 @@ class Brick extends Element3D {
 class Tetrahedral extends Element3D {
 	order;
 	line_order;
+
 	constructor(coords, gdls) {
 		super(coords, gdls);
+		this.nfaces = 4;
 		this.coords_o = coords;
 		this.domain = [
 			[0.0, 0.0, 0.0],

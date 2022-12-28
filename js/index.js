@@ -6,7 +6,7 @@ let axis = 6;
 let zoom = 1;
 let lines = true;
 
-let path_str = "I";
+let path_str = "ESFERA_SIN_BORDES";
 let queryString = window.location.search;
 let vis_param = 0;
 if (queryString != "") {
@@ -57,7 +57,6 @@ O.draw_lines = lines;
 await O.loadJSON(path);
 O.step = mode;
 await O.init();
-console.log(O.OctTree.query_range_point_radius([0, 0, 0], 0.5));
 document.addEventListener("visibilitychange", (e) =>
 	O.handleVisibilityChange(e)
 );

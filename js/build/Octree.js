@@ -26,17 +26,14 @@ class Quadrant3D {
 		this._xcenter = [x, y, z];
 	}
 	contains(e) {
-		let x = e._xcenter;
+		let x = e["_xcenter"];
 
-		let superior = this.maximos_this - x >= 0;
-		let inferior = x - this.minimos_this >= 0;
-		let r = true;
 		for (let i = 0; i < 3; i++) {
-			r = r && this.maximos_this[i] - x[i] >= 0;
-			r = r && x[i] - this.minimos_this[i] >= 0;
+			if (this.maximos_this[i] - x[i] < 0) return false;
+			if (x[i] - this.minimos_this[i] < 0) return false;
 		}
 
-		return r;
+		return true;
 	}
 
 	boxes_disjoint(e) {
@@ -84,15 +81,14 @@ class Quadrant3DSpherical extends Quadrant3D {
 	}
 	contains(e) {
 		let s = 0;
-		s += (this._xcenter[0] - e._xcenter[0]) ** 2;
-		s += (this._xcenter[1] - e._xcenter[1]) ** 2;
-		s += (this._xcenter[2] - e._xcenter[2]) ** 2;
+		s += (this._xcenter[0] - e["_xcenter"][0]) ** 2;
+		s += (this._xcenter[1] - e["_xcenter"][1]) ** 2;
+		s += (this._xcenter[2] - e["_xcenter"][2]) ** 2;
 
 		return s <= this.r ** 2;
 	}
 }
 class Geometree {
-	static min_search_size = -1;
 	constructor(boundary, n = 1, depth = 1) {
 		this.boundary = boundary;
 		this.points = [];
@@ -168,14 +164,18 @@ class Geometree {
 		let selected = this.query_range(q);
 		return selected;
 	}
+	query_first_point_set() {
+		if (this.divided) {
+			for (const ch of this.children) {
+				if (ch.children.length > 0 || ch.points.length > 0) {
+					return ch.query_first_point_set();
+				}
+			}
+		} else {
+			return this.points;
+		}
+		console.error("This should not happen");
+	}
 }
 
-// def query_first_point_set(this):
-// 	if this.divided:
-// 		for ch in this.children:
-// 			if ch.children or ch.points:
-// 				return ch.query_first_point_set()
-// 	else:
-// 		return this.points
-// 	raise Exception("This should not happen")
 export { Quadrant3D, Geometree };

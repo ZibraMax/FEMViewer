@@ -54,6 +54,7 @@ class FEMViewer {
 		}
 		// FEM
 		this.corriendo = false;
+		this.min_search_radius = -Infinity;
 		this.max_color_value = 0;
 		this.min_color_value = 0;
 		this.initial_zoom = iz;
@@ -160,11 +161,100 @@ class FEMViewer {
 		});
 	}
 
-	async loadJSON(json_path) {
+	testNeighborg(ide1, ide2) {
+		const e1 = this.elements[ide1];
+		const e2 = this.elements[ide2];
+		let MIN_VERTICES = 3;
+		let en_comun = 0;
+		for (const c1 of e1.coords) {
+			for (const c2 of e2.coords) {
+				if (c2 == c1) {
+					en_comun += 1;
+					if (en_comun >= MIN_VERTICES) {
+						return true;
+					}
+					break;
+				}
+			}
+		}
+		return false;
+	}
+
+	isBorder(e) {
+		let nfaces = this.elements[e["id"]].nfaces;
+		let neighbors = 0;
+		let potential = this.OctTree.query_range_point_radius(
+			e["_xcenter"],
+			this.min_search_radius
+		);
+		let nb = [];
+		for (const ie2 of potential) {
+			if (e["id"] != ie2["id"]) {
+				if (this.testNeighborg(e["id"], ie2["id"])) {
+					neighbors += 1;
+					nb.push(ie2);
+					if (neighbors == nfaces) {
+						break;
+					}
+				}
+			}
+		}
+		if (neighbors < nfaces) {
+			return [true, nb];
+		}
+		return [false, potential];
+	}
+
+	detectBorderElements() {
+		this.visited = new Array(this.elements.length).fill(false);
+		console.log("Encontrando elementos de borde");
+		const e = this.OctTree.query_first_point_set()[0];
+		let [res, vecinos] = this._detectBorderElementsIterative(e);
+		this.visited = new Array(this.elements.length).fill(false);
+		console.log("Se encontraron " + res.length + " elementos de borde");
+		let be = [];
+		for (const b of res) {
+			be.push(b["id"]);
+		}
+		this.updateBorderElements(be);
+		return res;
+	}
+
+	_detectBorderElementsIterative(e) {
+		let i = 0;
+		let le = [e];
+		let vecinos = [];
+		this.visited[e["id"]] = true;
+		let [isBorder, neighbors] = this.isBorder(e);
+		vecinos.push(neighbors);
+		while (i < le.length) {
+			let ele_index = le[i]["id"];
+			e = { _xcenter: this.elements[ele_index]._xcenter, id: ele_index };
+			neighbors = vecinos[i];
+			for (const nb of neighbors) {
+				if (!this.visited[nb["id"]]) {
+					this.visited[nb["id"]] = true;
+					let [ib, nbn] = this.isBorder(nb);
+					if (ib) {
+						le.push(nb);
+						vecinos.push(nbn);
+					}
+				}
+			}
+			i += 1;
+			console.log("Encontrados " + le.length + " elementos de borde");
+		}
+		return [le, vecinos];
+	}
+
+	async loadJSON(json_path, be) {
 		this.json_path = json_path;
 		this.filename = json_path;
 		const response = await fetch(this.json_path);
 		const jsondata = await response.json();
+		if (be != undefined) {
+			jsondata["border_elements"] = be;
+		}
 		this.parseJSON(jsondata);
 	}
 	reset() {
@@ -261,6 +351,9 @@ class FEMViewer {
 		this.gui
 			.add(this, "modalManager3")
 			.name("Show scaled jacobian histogram");
+		this.gui
+			.add(this, "detectBorderElements")
+			.name("Detect border elements");
 		this.gui.add(this.gh, "visible").name("Axis");
 		this.gui.add(this, "rot").name("Rotation").listen();
 
@@ -349,6 +442,19 @@ class FEMViewer {
 			this.after_load();
 		});
 	}
+
+	updateBorderElements(be) {
+		this.reset();
+		this.before_load();
+		console.log("Empezando a cargar!");
+		const resp = this.loadJSON(this.filename, be);
+		resp.then(() => {
+			console.log("Cargado!");
+			this.init(false);
+			this.after_load();
+		});
+	}
+
 	updateLut() {
 		this.lut.setColorMap(this.colormap);
 		const map = this.sprite.material.map;
@@ -855,19 +961,13 @@ class FEMViewer {
 			math.max(secon_coords[2].flat()) - math.min(secon_coords[2].flat());
 
 		let centerx =
-			(math.max(secon_coords[0].flat()) +
-				math.min(secon_coords[0].flat())) /
-			2;
+			(math.max(secon_coords[0]) + math.min(secon_coords[0])) / 2;
 		let centery =
-			(math.max(secon_coords[1].flat()) +
-				math.min(secon_coords[1].flat())) /
-			2;
+			(math.max(secon_coords[1]) + math.min(secon_coords[1])) / 2;
 		let centerz =
-			(math.max(secon_coords[2].flat()) +
-				math.min(secon_coords[2].flat())) /
-			2;
+			(math.max(secon_coords[2]) + math.min(secon_coords[2])) / 2;
 		let center = [centerx, centery, centerz];
-		let dimens = [sizex / 2, sizey / 2, sizez / 2];
+		let dimens = [sizex, sizey, sizez];
 		let bounding = new Quadrant3D(center, dimens);
 		this.OctTree = new Geometree(bounding);
 		for (let i = 0; i < this.nodes.length; i++) {
@@ -936,6 +1036,20 @@ class FEMViewer {
 				egdls,
 				this.size * this.norm
 			);
+
+			let d = 0;
+			for (const c of coords) {
+				let sx = c[0] - this.elements[i]._xcenter[0];
+				let sy = c[1] - this.elements[i]._xcenter[1];
+				let sz = c[2] - this.elements[i]._xcenter[2];
+				d = Math.max(d, sx ** 2 + sy ** 2 + sz ** 2);
+			}
+
+			this.min_search_radius = Math.max(
+				this.min_search_radius,
+				2 * d ** 0.5
+			);
+
 			let p = { _xcenter: this.elements[i]._xcenter.slice(), id: i };
 			this.OctTree.add_point(p);
 			const colors = [];
