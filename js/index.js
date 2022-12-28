@@ -57,6 +57,7 @@ O.draw_lines = lines;
 await O.loadJSON(path);
 O.step = mode;
 await O.init();
+
 document.addEventListener("visibilitychange", (e) =>
 	O.handleVisibilityChange(e)
 );
@@ -139,12 +140,3 @@ getFiles([
 	"https://api.github.com/repos/ZibraMax/FEM/git/trees/master?recursive=1",
 	"https://api.github.com/repos/ZibraMax/FEMViewer/git/trees/main?recursive=1",
 ]);
-
-const myWorker = new Worker("./js/worker.js", { type: "module" });
-
-myWorker.postMessage([...O.elements]);
-
-myWorker.onmessage = function (e) {
-	console.log("Message received from worker");
-	console.log(e.data);
-};

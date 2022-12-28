@@ -1,5 +1,42 @@
 import * as THREE from "./three.module.js";
-import { add } from "./MATHJSESM/number.js";
+
+function transpose(arr) {
+	return arr[0].map((_, colIndex) => arr.map((row) => row[colIndex]));
+}
+function multiply(a, b) {
+	var aNumRows = a.length,
+		aNumCols = a[0].length,
+		bNumRows = b.length,
+		bNumCols = b[0].length,
+		m = new Array(aNumRows); // initialize array of rows
+	for (var r = 0; r < aNumRows; ++r) {
+		m[r] = new Array(bNumCols); // initialize the current row
+		for (var c = 0; c < bNumCols; ++c) {
+			m[r][c] = 0; // initialize the current cell
+			for (var i = 0; i < aNumCols; ++i) {
+				m[r][c] += a[r][i] * b[i][c];
+			}
+		}
+	}
+	return m;
+}
+const det = (m) =>
+	m.length == 1
+		? m[0][0]
+		: m.length == 2
+		? m[0][0] * m[1][1] - m[0][1] * m[1][0]
+		: m[0].reduce(
+				(r, e, i) =>
+					r +
+					(-1) ** (i + 2) *
+						e *
+						det(m.slice(1).map((c) => c.filter((_, j) => i != j))),
+				0
+		  );
+
+function sum(arr) {
+	return arr.reduce((partialSum, a) => partialSum + a, 0);
+}
 class Element {
 	coords;
 	gdls;
@@ -118,13 +155,13 @@ class Element {
 		}
 	}
 	J(_z) {
-		const dpsis = math.transpose(this.dpsi(_z));
-		const j = math.multiply(dpsis, this.coords_o);
+		const dpsis = transpose(this.dpsi(_z));
+		const j = multiply(dpsis, this.coords_o);
 		return [j, dpsis];
 	}
 	T(_z) {
 		let p = this.psi(_z);
-		return [math.multiply(p, this.coords_o), p];
+		return [multiply(p, this.coords_o), p];
 	}
 	async calculateJacobian() {
 		return new Promise((resolve) => {
@@ -132,7 +169,7 @@ class Element {
 			let min_j = Infinity;
 			for (const z of this.Z) {
 				const [J, dpz] = this.J(z);
-				const j = math.det(J);
+				const j = det(J);
 				max_j = Math.max(max_j, j);
 				min_j = Math.min(min_j, j);
 			}
@@ -148,7 +185,7 @@ class Element {
 		let min_j = Infinity;
 		for (const z of this.Z) {
 			const [J, dpz] = this.J(z);
-			const j = math.det(J);
+			const j = det(J);
 			max_j = Math.max(max_j, j);
 			min_j = Math.min(min_j, j);
 		}
@@ -158,12 +195,12 @@ class Element {
 	// inverseMapping(x0) {
 	// 	let zi = [0.15, 0.15, 0.15];
 	// 	for (let i = 0; i < 100; i++) {
-	// 		const xi = math.add(x0, math.multiply(this.T(zi)[0], -1));
+	// 		const xi = math.add(x0, multiply(this.T(zi)[0], -1));
 	// 		const [J, dpz] = this.J(zi);
 	// 		const _J = math.inv(J);
-	// 		const dz = math.multiply(_J, xi);
+	// 		const dz = multiply(_J, xi);
 	// 		zi = math.add(zi, dz);
-	// 		if (math.sum(math.abs(dz)) < 0.0000001) {
+	// 		if (sum(math.abs(dz)) < 0.0000001) {
 	// 			return zi;
 	// 		}
 	// 	}
@@ -175,8 +212,8 @@ class Element {
 			for (const z of this.domain) {
 				const [J, dpz] = this.J(z);
 				const _J = math.inv(J);
-				const dpx = math.multiply(_J, dpz);
-				this.dus.push(math.multiply(this.Ue, math.transpose(dpx)));
+				const dpx = multiply(_J, dpz);
+				this.dus.push(multiply(this.Ue, transpose(dpx)));
 			}
 		} catch (error) {}
 		if (strain) this.calculateStrain();
@@ -191,7 +228,7 @@ class Element {
 			let im = this.inverseMapping(X);
 			for (let i = 0; i < this.domain.length; i++) {
 				let p = this.domain[i];
-				let resta = math.sum(
+				let resta = sum(
 					...[
 						(im[0] - p[0]) ** 2,
 						(im[1] - p[1]) ** 2,
@@ -216,7 +253,7 @@ class Element {
 			let im = this.inverseMapping(X);
 			for (let i = 0; i < this.domain.length; i++) {
 				let p = this.domain[i];
-				let resta = math.sum(
+				let resta = sum(
 					...[
 						(im[0] - p[0]) ** 2,
 						(im[1] - p[1]) ** 2,
@@ -302,6 +339,7 @@ class Brick extends Element3D {
 	line_order;
 	constructor(coords, gdls) {
 		super(coords, gdls);
+		this.type = "B1V";
 		this.nfaces = 6;
 		this.coords_o = coords;
 		this.domain = [
@@ -459,6 +497,8 @@ class Tetrahedral extends Element3D {
 
 	constructor(coords, gdls) {
 		super(coords, gdls);
+		this.type = "TE1V";
+
 		this.nfaces = 4;
 		this.coords_o = coords;
 		this.domain = [
@@ -527,6 +567,8 @@ class Lineal extends Element3D {
 	line_order;
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
+		this.type = "L1V";
+
 		this.geometry = new THREE.BoxGeometry(1);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.order = [
@@ -582,6 +624,7 @@ class Lineal extends Element3D {
 class LinealO2 extends Lineal {
 	constructor(coords, gdls, tama) {
 		super(coords, gdls, tama);
+		this.type = "L2V";
 	}
 	psi(_z) {
 		return 0.0;
@@ -596,6 +639,8 @@ class Triangular extends Element3D {
 	line_order;
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
+		this.type = "T1V";
+
 		const c = [];
 		for (let i = 0; i < coords.length; i++) {
 			const x = coords[i][0];
@@ -692,6 +737,8 @@ class Quadrilateral extends Element3D {
 	line_order;
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
+		this.type = "C1V";
+
 		const c = [];
 		for (let i = 0; i < coords.length; i++) {
 			const x = coords[i][0];
@@ -792,6 +839,7 @@ class Quadrilateral extends Element3D {
 class TetrahedralO2 extends Tetrahedral {
 	constructor(coords, gdls) {
 		super(coords, gdls);
+		this.type = "TE2V";
 	}
 	psi(_z) {
 		x = _z[0];
@@ -842,6 +890,7 @@ class TetrahedralO2 extends Tetrahedral {
 class BrickO2 extends Brick {
 	constructor(coords, gdls) {
 		super(coords, gdls);
+		this.type = "B2V";
 	}
 	psi(z) {
 		return 0.0;
@@ -854,6 +903,7 @@ class BrickO2 extends Brick {
 class TriangularO2 extends Triangular {
 	constructor(coords, gdls, tama) {
 		super(coords, gdls, tama);
+		this.type = "T2V";
 	}
 	psi(z) {
 		return [
@@ -880,6 +930,7 @@ class TriangularO2 extends Triangular {
 class Serendipity extends Quadrilateral {
 	constructor(coords, gdls, tama) {
 		super(coords, gdls, tama);
+		this.type = "C2V";
 	}
 	psi(z) {
 		return [

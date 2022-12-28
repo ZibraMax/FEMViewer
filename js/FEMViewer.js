@@ -773,8 +773,21 @@ class FEMViewer {
 			this.corriendo = true;
 			requestAnimationFrame(this.update.bind(this));
 		}
+		this.calculate_jacobians_worker();
 	}
+	calculate_jacobians_worker() {
+		console.log("Comenzó calculo de jacobianos");
+		let OBJ = this;
+		const myWorker = new Worker("./js/worker.js", { type: "module" });
+		myWorker.postMessage([...OBJ.elements]);
 
+		myWorker.onmessage = function (msg) {
+			for (let i = 0; i < OBJ.elements.length; i++) {
+				OBJ.elements[i].scaledJacobian = msg.data[i];
+			}
+			console.log("Termino calculo de jacobianos");
+		};
+	}
 	setStep(step) {
 		this.step = step;
 		this.updateU();

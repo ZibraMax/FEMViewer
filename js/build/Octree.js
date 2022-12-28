@@ -20,8 +20,8 @@ class Quadrant3D {
 		this.maximos_this = [];
 		this.minimos_this = [];
 		for (let i = 0; i < 3; i++) {
-			this.maximos_this.push(math.max(this.coordsT[i]));
-			this.minimos_this.push(math.min(this.coordsT[i]));
+			this.maximos_this.push(Math.max(...this.coordsT[i]));
+			this.minimos_this.push(Math.min(...this.coordsT[i]));
 		}
 		this._xcenter = [x, y, z];
 	}

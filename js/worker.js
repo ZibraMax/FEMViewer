@@ -11,26 +11,23 @@ import {
 	LinealO2,
 	Element3D,
 } from "./build/Elements.js";
+const types = {
+	B1V: Brick,
+	B2V: BrickO2,
+	TE1V: Tetrahedral,
+	TE2V: TetrahedralO2,
+	L1V: Lineal,
+	T1V: Triangular,
+	T2V: TriangularO2,
+	C1V: Quadrilateral,
+	C2V: Serendipity,
+	L2V: LinealO2,
+};
 
-function sJ(e) {
-	if (e.scaledJacobian) {
-		return e.scaledJacobian;
-	}
-	let max_j = -Infinity;
-	let min_j = Infinity;
-	for (const z of this.Z) {
-		const [J, dpz] = e.J(z);
-		const j = math.det(J);
-		max_j = Math.max(max_j, j);
-		min_j = Math.min(min_j, j);
-	}
-	e.scaledJacobian = min_j / Math.abs(max_j);
-	return min_j / Math.abs(max_j);
-}
 onmessage = function (msg) {
 	const workerResult = [];
 	for (const dat of msg.data) {
-		const e = new Element3D(dat.coords, dat.gdls);
+		const e = new types[dat.type](dat.coords, dat.gdls);
 		e.Z = dat.Z;
 		e.W = dat.W;
 		workerResult.push(e.sJ);
