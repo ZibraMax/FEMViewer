@@ -1,5 +1,5 @@
 import * as THREE from "./build/three.module.js";
-import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.16/+esm";
+import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.17/+esm";
 import { OrbitControls } from "./build/OrbitControls.js";
 import * as BufferGeometryUtils from "./build/BufferGeometryUtils.js";
 import { AxisGridHelper } from "./build/minigui.js";
@@ -31,6 +31,14 @@ const types = {
 	C2V: Serendipity,
 	L2V: LinealO2,
 };
+
+const DIV = document.getElementById("status-bar");
+
+function allowUpdate() {
+	return new Promise((f) => {
+		setTimeout(f, 0);
+	});
+}
 
 class FEMViewer {
 	json_path;
@@ -205,6 +213,8 @@ class FEMViewer {
 		return [false, potential];
 	}
 	detectBorderElements2() {
+		const e = document.getElementById("lil-gui-name-5");
+		e.innerHTML = e.innerHTML + "⌛";
 		this.calculate_border_elements_worker();
 	}
 
@@ -252,6 +262,7 @@ class FEMViewer {
 	}
 
 	async loadJSON(json_path, be) {
+		DIV.innerHTML = "Loading model..." + "⌛";
 		this.json_path = json_path;
 		this.filename = json_path;
 		const response = await fetch(this.json_path);
@@ -260,6 +271,7 @@ class FEMViewer {
 			jsondata["border_elements"] = be;
 		}
 		this.parseJSON(jsondata);
+		DIV.innerHTML = "Ready!";
 	}
 	reset() {
 		this.animate = false;
@@ -439,10 +451,10 @@ class FEMViewer {
 		this.animate = false;
 		this.reset();
 		this.before_load();
-		console.log("Empezando a cargar!");
+		DIV.innerHTML = "Reloading model..." + "⌛";
 		const resp = this.loadJSON(this.filename);
 		resp.then(() => {
-			console.log("Cargado!");
+			DIV.innerHTML = "Ready!";
 			this.init(false);
 			this.after_load();
 		});
@@ -451,10 +463,10 @@ class FEMViewer {
 	updateBorderElements(be) {
 		this.reset();
 		this.before_load();
-		console.log("Empezando a cargar!");
+		DIV.innerHTML = "Reloading model..." + "⌛";
 		const resp = this.loadJSON(this.filename, be);
 		resp.then(() => {
-			console.log("Cargado!");
+			DIV.innerHTML = "Ready!";
 			this.init(false);
 			this.after_load();
 		});
@@ -742,13 +754,15 @@ class FEMViewer {
 		if (!this.config_dict["displacements"]) {
 			this.animate = false;
 		}
-		this.createElements();
+		await this.createElements();
 		this.createLines();
 
 		this.mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(
 			this.bufferGeometries,
 			true
 		);
+		DIV.innerHTML = "Creating materials..." + "⌛";
+		await allowUpdate();
 		this.updateMaterial();
 		const line_material = new THREE.LineBasicMaterial({
 			color: "black",
@@ -765,6 +779,8 @@ class FEMViewer {
 		// this.model.add(this.contour);
 
 		this.mesh = new THREE.Mesh(this.mergedGeometry, this.material);
+		DIV.innerHTML = "Adding mesh..." + "⌛";
+		await allowUpdate();
 		this.updateU();
 		this.model.add(this.mesh);
 
@@ -773,14 +789,18 @@ class FEMViewer {
 		this.zoomExtents();
 		this.updateLines();
 		window.addEventListener("resize", this.render.bind(this));
+		DIV.innerHTML = "Drawing model..." + "⌛";
+		await allowUpdate();
 		if (!this.corriendo) {
 			this.corriendo = true;
 			requestAnimationFrame(this.update.bind(this));
 		}
+		DIV.innerHTML = "Done!";
+		await allowUpdate();
 		this.calculate_jacobians_worker();
 	}
 	calculate_jacobians_worker() {
-		console.log("Comenzó calculo de jacobianos");
+		DIV.innerHTML = "Calculating jacobian..." + "⌛";
 		let OBJ = this;
 		const myWorker = new Worker("./js/worker_jacobianos.js", {
 			type: "module",
@@ -791,7 +811,11 @@ class FEMViewer {
 			for (let i = 0; i < OBJ.elements.length; i++) {
 				OBJ.elements[i].scaledJacobian = msg.data[i];
 			}
-			console.log("Termino calculo de jacobianos");
+			DIV.innerHTML = "Jacobians calculated successfully!";
+
+			setTimeout(() => {
+				DIV.innerHTML = "Ready!";
+			}, 1500);
 		};
 	}
 
@@ -811,7 +835,7 @@ class FEMViewer {
 	}
 
 	calculate_border_elements_worker() {
-		console.log("Comenzó calculo de elementos de borde");
+		DIV.innerHTML = "Border elements started..." + "⌛";
 		let OBJ = this;
 		const myWorker = new Worker("./js/worker_border_elements.js", {
 			type: "module",
@@ -823,9 +847,19 @@ class FEMViewer {
 		]);
 
 		myWorker.onmessage = function (msg) {
-			const be = msg.data;
-			OBJ.updateBorderElements(be);
-			console.log("Termino calculo de elementos de borde");
+			if (msg.data[0] == "MSG") {
+				DIV.innerHTML = msg.data[1];
+			} else {
+				const be = msg.data;
+				OBJ.updateBorderElements(be);
+				const e = document.getElementById("lil-gui-name-5");
+				const original = "Detect border elements";
+				e.innerHTML = original;
+				DIV.innerHTML = "Border elements finished!";
+				setTimeout(() => {
+					DIV.innerHTML = "Ready!";
+				}, 1500);
+			}
 		};
 	}
 	setStep(step) {
@@ -1067,9 +1101,10 @@ class FEMViewer {
 		this.updateSolution();
 	}
 
-	createElements() {
+	async createElements() {
 		this.bufferGeometries = [];
 		this.elements = new Array(this.dictionary.length).fill(0.0);
+		let times = 0;
 		for (let i = 0; i < this.dictionary.length; i++) {
 			const gdls = this.dictionary[i];
 			const egdls = [];
@@ -1120,6 +1155,13 @@ class FEMViewer {
 				new THREE.Float32BufferAttribute(colors, 3)
 			);
 			this.bufferGeometries.push(this.elements[i].geometry);
+			let percentage = (i / this.dictionary.length) * 100;
+			if (percentage > times) {
+				times += 1;
+				DIV.innerHTML =
+					"Loading model " + percentage.toFixed(0) + "% ..." + "⌛";
+				await allowUpdate();
+			}
 		}
 	}
 	createLines() {

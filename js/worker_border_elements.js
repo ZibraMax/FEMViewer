@@ -98,7 +98,7 @@ function _detectBorderElementsIterative(
 			}
 		}
 		i += 1;
-		console.log("Encontrados " + le.length + " elementos de borde");
+		postMessage(["MSG", "Found " + le.length + " border elements. ⌛"]);
 	}
 	return [le, vecinos];
 }
