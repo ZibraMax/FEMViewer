@@ -213,8 +213,6 @@ class FEMViewer {
 		return [false, potential];
 	}
 	detectBorderElements2() {
-		const e = document.getElementById("lil-gui-name-5");
-		e.innerHTML = e.innerHTML + "⌛";
 		this.calculate_border_elements_worker();
 	}
 
@@ -430,10 +428,12 @@ class FEMViewer {
 				.name("Animation")
 				.listen()
 				.onChange(() => {
+					DIV.innerHTML = "Animation running!";
 					if (!this.animate) {
 						this.mult = 1.0;
 						this.updateMeshCoords();
 						this.updateGeometry();
+						DIV.innerHTML = "Ready!";
 					}
 				});
 			this.magnifSlider = this.disp_gui_disp_folder
@@ -848,32 +848,46 @@ class FEMViewer {
 	}
 
 	calculate_border_elements_worker() {
-		DIV.innerHTML = "Border elements started..." + "⌛";
-		let OBJ = this;
-		const myWorker = new Worker("./js/worker_border_elements.js", {
-			type: "module",
-		});
-		myWorker.postMessage([
-			[...OBJ.elements],
-			OBJ.OctTree,
-			OBJ.min_search_radius,
-		]);
-
-		myWorker.onmessage = function (msg) {
-			if (msg.data[0] == "MSG") {
-				DIV.innerHTML = msg.data[1];
-			} else {
-				const be = msg.data;
-				OBJ.updateBorderElements(be);
-				const e = document.getElementById("lil-gui-name-5");
-				const original = "Detect border elements";
-				e.innerHTML = original;
-				DIV.innerHTML = "Border elements finished!";
-				setTimeout(() => {
-					DIV.innerHTML = "Ready!";
-				}, 1500);
+		if (this.ndim == 3) {
+			let e = undefined;
+			for (const controller of this.gui.controllers) {
+				if (controller.property == "detectBorderElements2") {
+					e = controller.$name;
+				}
 			}
-		};
+			e.innerHTML = e.innerHTML + "⌛";
+			DIV.innerHTML = "Border elements started..." + "⌛";
+			let OBJ = this;
+			const myWorker = new Worker("./js/worker_border_elements.js", {
+				type: "module",
+			});
+			myWorker.postMessage([
+				[...OBJ.elements],
+				OBJ.OctTree,
+				OBJ.min_search_radius,
+			]);
+
+			myWorker.onmessage = function (msg) {
+				if (msg.data[0] == "MSG") {
+					DIV.innerHTML = msg.data[1];
+				} else {
+					const be = msg.data;
+					OBJ.updateBorderElements(be);
+					const original = "Detect border elements";
+					e.innerHTML = original;
+					DIV.innerHTML = "Border elements finished!";
+					setTimeout(() => {
+						DIV.innerHTML = "Ready!";
+					}, 1500);
+				}
+			};
+		} else {
+			DIV.innerHTML =
+				"Border element detection only avaliable in 3D geometry";
+			setTimeout(() => {
+				DIV.innerHTML = "Ready!";
+			}, 5000);
+		}
 	}
 	setStep(step) {
 		this.step = step;
