@@ -1159,7 +1159,10 @@ class FEMViewer {
 			if (percentage > times) {
 				times += 1;
 				DIV.innerHTML =
-					"Loading model " + percentage.toFixed(0) + "% ..." + "⌛";
+					"Loading model " +
+					'<progress value="' +
+					percentage +
+					'" max="100"> any% </progress>';
 				await allowUpdate();
 			}
 		}
