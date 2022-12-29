@@ -504,19 +504,22 @@ class FEMViewer {
 			max_disp = Math.max(max_disp, ...variable);
 			min_disp = Math.min(min_disp, ...variable);
 		}
+		let delta = max_disp - min_disp;
+		if (delta == 0) {
+			delta = 1;
+			max_disp += 0.5;
+			min_disp -= 0.5;
+		}
 		this.max_color_value = max_disp;
 		this.min_color_value = min_disp;
-		this.max_color_value_slider.max(max_disp);
-		this.max_color_value_slider.min(min_disp);
-		this.max_color_value_slider.step(
-			(this.max_color_value - this.min_color_value) / 1000
-		);
-		this.min_color_value_slider.step(
-			(this.max_color_value - this.min_color_value) / 1000
-		);
+		this.max_color_value_slider.step(delta / 1000);
+		this.min_color_value_slider.step(delta / 1000);
 
 		this.min_color_value_slider.max(max_disp);
 		this.min_color_value_slider.min(min_disp);
+
+		this.max_color_value_slider.max(max_disp);
+		this.max_color_value_slider.min(min_disp);
 		this.updateLut();
 	}
 	updateCamera() {

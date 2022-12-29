@@ -568,6 +568,12 @@ class Lineal extends Element3D {
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
 		this.type = "L1V";
+		const c = [];
+		for (let i = 0; i < coords.length; i++) {
+			const x = coords[i][0];
+			c.push([x]);
+		}
+		this.coords_o = c;
 
 		this.geometry = new THREE.BoxGeometry(1);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
@@ -613,11 +619,11 @@ class Lineal extends Element3D {
 		this.Z = [[-0.77459667], [0], [0.77459667]];
 		this.W = [0.55555556, 0.88888889, 0.55555556];
 	}
-	psi(_z) {
-		return 0.0;
+	psi(z) {
+		return [0.5 * (1.0 - z[0]), 0.5 * (1.0 + z[0])];
 	}
 	dpsi(_z) {
-		return 0.0;
+		return [[-0.5], [0.5]];
 	}
 }
 
@@ -626,11 +632,16 @@ class LinealO2 extends Lineal {
 		super(coords, gdls, tama);
 		this.type = "L2V";
 	}
-	psi(_z) {
-		return 0.0;
+	psi(z) {
+		let zm1 = z[0] + 1.0;
+		return [
+			1.0 - (3.0 / 2.0) * zm1 + (zm1 * zm1) / 2.0,
+			2.0 * zm1 * (1.0 - zm1 / 2.0),
+			(z / 2.0) * zm1,
+		];
 	}
-	dpsi(_z) {
-		return 0.0;
+	dpsi(z) {
+		return [[z[0] - 0.5], [-2.0 * z[0]], [0.5 + z[0]]];
 	}
 }
 
