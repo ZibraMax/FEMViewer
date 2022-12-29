@@ -744,6 +744,8 @@ class FEMViewer {
 	updateLines() {
 		if (this.draw_lines) {
 			this.model.add(this.contour);
+			this.updateMeshCoords();
+			this.updateGeometry();
 		} else {
 			this.model.remove(this.contour);
 		}
@@ -800,7 +802,7 @@ class FEMViewer {
 		this.calculate_jacobians_worker();
 	}
 	calculate_jacobians_worker() {
-		DIV.innerHTML = "Calculating jacobian..." + "⌛";
+		DIV.innerHTML = "Calculating jacobians..." + "⌛";
 		let OBJ = this;
 		const myWorker = new Worker("./js/worker_jacobianos.js", {
 			type: "module",
@@ -808,14 +810,22 @@ class FEMViewer {
 		myWorker.postMessage([...OBJ.elements]);
 
 		myWorker.onmessage = function (msg) {
-			for (let i = 0; i < OBJ.elements.length; i++) {
-				OBJ.elements[i].scaledJacobian = msg.data[i];
-			}
-			DIV.innerHTML = "Jacobians calculated successfully!";
+			if (msg.data[0] == "MSG") {
+				DIV.innerHTML =
+					"Calculating jacobians " +
+					'<progress value="' +
+					msg.data[1] +
+					'" max="100"> any% </progress>';
+			} else {
+				for (let i = 0; i < OBJ.elements.length; i++) {
+					OBJ.elements[i].scaledJacobian = msg.data[i];
+				}
+				DIV.innerHTML = "Jacobians calculated successfully!";
 
-			setTimeout(() => {
-				DIV.innerHTML = "Ready!";
-			}, 1500);
+				setTimeout(() => {
+					DIV.innerHTML = "Ready!";
+				}, 1500);
+			}
 		};
 	}
 

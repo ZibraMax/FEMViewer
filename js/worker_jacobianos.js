@@ -26,11 +26,18 @@ const types = {
 
 onmessage = function (msg) {
 	const workerResult = [];
+	let i = 0;
+	let n = msg.data.length;
+	let times = 0;
 	for (const dat of msg.data) {
+		i = i + 1;
 		const e = new types[dat.type](dat.coords, dat.gdls);
-		e.Z = dat.Z;
-		e.W = dat.W;
 		workerResult.push(e.sJ);
+		let percentage = (i / n) * 100;
+		if (percentage > times) {
+			times += 1;
+			postMessage(["MSG", percentage]);
+		}
 	}
 	postMessage(workerResult);
 };
