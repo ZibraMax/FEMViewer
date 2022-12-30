@@ -140,3 +140,9 @@ getFiles([
 	"https://api.github.com/repos/ZibraMax/FEM/git/trees/master?recursive=1",
 	"https://api.github.com/repos/ZibraMax/FEMViewer/git/trees/main?recursive=1",
 ]);
+let drag = false;
+canvas.addEventListener("mousedown", () => (drag = false));
+canvas.addEventListener("mousemove", () => (drag = true));
+canvas.addEventListener("mouseup", (e) => {
+	drag ? "drag" : O.onDocumentMouseDown(e);
+});

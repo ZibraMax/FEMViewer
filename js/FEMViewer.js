@@ -62,6 +62,7 @@ class FEMViewer {
 		}
 		// FEM
 		this.corriendo = false;
+		this.animationFrameID = undefined;
 		this.min_search_radius = -Infinity;
 		this.max_color_value = 0;
 		this.min_color_value = 0;
@@ -108,6 +109,7 @@ class FEMViewer {
 		this.bufferGeometries = [];
 		this.bufferLines = [];
 		this.model = new THREE.Object3D();
+		this.invisibleModel = new THREE.Object3D();
 		this.colors = false;
 		this.animate = true;
 		this.magnif = magnif;
@@ -279,6 +281,7 @@ class FEMViewer {
 			this.bufferGeometries.pop().dispose();
 			this.bufferLines.pop().dispose();
 		}
+		this.invisibleModel = new THREE.Object3D();
 		this.model.remove(this.mesh);
 		this.model.remove(this.contour);
 		this.config_dict = CONFIG_DICT["GENERAL"];
@@ -308,6 +311,8 @@ class FEMViewer {
 		this.magnif = 0.0;
 		this.max_abs_disp = undefined;
 		this.border_elements = [];
+		this.scene.remove(this.model);
+		this.scene.remove(this.invisibleModel);
 		delete this.mergedGeometry;
 		delete this.mergedLineGeometry;
 	}
@@ -448,6 +453,8 @@ class FEMViewer {
 	}
 
 	reload() {
+		cancelAnimationFrame(this.animationFrameID);
+
 		this.animate = false;
 		this.reset();
 		this.before_load();
@@ -567,7 +574,7 @@ class FEMViewer {
 
 			this.delta = this.delta % this.interval;
 		}
-		requestAnimationFrame(this.update.bind(this));
+		this.animationFrameID = requestAnimationFrame(this.update.bind(this));
 	}
 
 	resizeRendererToDisplaySize() {
@@ -620,13 +627,20 @@ class FEMViewer {
 					this.bufferGeometries[i]
 				);
 			}
-			if (this.colors) {
-				const colors = this.bufferGeometries[i].attributes.color;
-				for (let j = 0; j < e.order.length; j++) {
-					let disp = e.colors[j];
-					const color = this.lut.getColor(disp);
-					colors.setXYZ(j, color.r, color.g, color.b);
-				}
+		}
+		if (this.colors) {
+			this.updateColorValues();
+		}
+	}
+
+	updateColorValues() {
+		for (let i = 0; i < this.elements.length; i++) {
+			const e = this.elements[i];
+			const colors = this.bufferGeometries[i].attributes.color;
+			for (let j = 0; j < e.order.length; j++) {
+				let disp = e.colors[j];
+				const color = this.lut.getColor(disp);
+				colors.setXYZ(j, color.r, color.g, color.b);
 			}
 		}
 	}
@@ -747,8 +761,6 @@ class FEMViewer {
 	updateLines() {
 		if (this.draw_lines) {
 			this.model.add(this.contour);
-			this.updateMeshCoords();
-			this.updateGeometry();
 		} else {
 			this.model.remove(this.contour);
 		}
@@ -788,21 +800,20 @@ class FEMViewer {
 		await allowUpdate();
 		this.updateU();
 		this.model.add(this.mesh);
+		this.model.add(this.contour);
 
 		this.scene.add(this.model);
+		this.scene.add(this.invisibleModel);
 		this.renderer.render(this.scene, this.camera);
 		this.zoomExtents();
-		this.updateLines();
 		window.addEventListener("resize", this.render.bind(this));
 		DIV.innerHTML = "Drawing model..." + "⌛";
 		await allowUpdate();
-		if (!this.corriendo) {
-			this.corriendo = true;
-			requestAnimationFrame(this.update.bind(this));
-		}
+		requestAnimationFrame(this.update.bind(this));
 		DIV.innerHTML = "Done!";
 		await allowUpdate();
 		this.calculate_jacobians_worker();
+		console.log(this.renderer.info);
 	}
 	calculate_jacobians_worker() {
 		DIV.innerHTML = "Calculating jacobians..." + "⌛";
@@ -1182,6 +1193,15 @@ class FEMViewer {
 				new THREE.Float32BufferAttribute(colors, 3)
 			);
 			this.bufferGeometries.push(this.elements[i].geometry);
+			const messh = new THREE.Mesh(
+				this.elements[i].geometry,
+				this.material
+			);
+			messh.visible = false;
+			messh.userData = { elementId: i };
+
+			this.invisibleModel.add(messh);
+
 			let percentage = (i / this.dictionary.length) * 100;
 			if (percentage > times) {
 				times += 1;
@@ -1201,26 +1221,30 @@ class FEMViewer {
 		}
 	}
 	onDocumentMouseDown(event) {
-		// event.preventDefault();
-		// const mouse3D = new THREE.Vector2(
-		// 	(event.clientX / window.innerWidth) * 2 - 1,
-		// 	-(event.clientY / window.innerHeight) * 2 + 1
-		// );
-		// const raycaster = new THREE.Raycaster();
-		// raycaster.setFromCamera(mouse3D, this.camera);
-		// const intersects = raycaster.intersectObjects(this.model.children);
-		// for (const e of intersects) {
-		// 	const index = e.object.userData.elementId;
-		// 	this.elements[index].colors = this.elements[index].colors.map(
-		// 		(x) => 0
-		// 	);
-		// }
-		// if (intersects.length > 0) {
-		// 	const keleven = intersects[0].object.userData.elementId;
-		// 	console.log(keleven);
-		// 	const e = this.elements[keleven];
-		// 	console.log(e);
-		// }
+		if (this.loaded) {
+			this.updateColorValues();
+			event.preventDefault();
+			const mouse3D = new THREE.Vector2(
+				(event.clientX / window.innerWidth) * 2 - 1,
+				-(event.clientY / window.innerHeight) * 2 + 1
+			);
+			const raycaster = new THREE.Raycaster();
+			raycaster.setFromCamera(mouse3D, this.camera);
+			const intersects = raycaster.intersectObjects(
+				this.invisibleModel.children
+			);
+			if (intersects.length > 0) {
+				const i = intersects[0].object.userData.elementId;
+				const e = this.elements[i];
+				const colors = this.bufferGeometries[i].attributes.color;
+				for (let j = 0; j < e.order.length; j++) {
+					let disp = e.colors[j];
+					const color = this.lut.getColor(disp);
+					colors.setXYZ(j, 1, 1, 1);
+				}
+				this.updateGeometry();
+			}
+		}
 	}
 }
 export { FEMViewer };
