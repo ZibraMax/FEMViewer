@@ -146,3 +146,13 @@ canvas.addEventListener("mousemove", () => (drag = true));
 canvas.addEventListener("mouseup", (e) => {
 	drag ? "drag" : O.onDocumentMouseDown(e);
 });
+
+const playButton = document.getElementById("play-button");
+playButton.addEventListener("click", () => {
+	const response = O.toogleRefresh();
+});
+
+const resetButton = document.getElementById("reload-button");
+resetButton.addEventListener("click", () => {
+	const response = O.reload();
+});

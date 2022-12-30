@@ -127,6 +127,7 @@ class FEMViewer {
 			magnif = 0;
 		}
 		// FEM
+		this.refreshing = true;
 		this.corriendo = false;
 		this.animationFrameID = undefined;
 		this.min_search_radius = -Infinity;
@@ -196,6 +197,28 @@ class FEMViewer {
 		this.loaded = false;
 		this.colorOptions = "nocolor";
 		this.settings();
+	}
+	updateRefresh() {
+		const playButton = document.getElementById("play-button");
+		this.controls.enabled = this.refreshing;
+		if (this.refreshing) {
+			playButton.setAttribute("class", "fa fa-pause notification-action");
+		} else {
+			playButton.setAttribute("class", "fa fa-play notification-action");
+		}
+	}
+	toogleRefresh() {
+		this.refreshing = !this.refreshing;
+		this.updateRefresh();
+		if (this.refreshing) {
+			this.animationFrameID = requestAnimationFrame(
+				this.update.bind(this)
+			);
+		} else {
+			cancelAnimationFrame(this.animationFrameID);
+		}
+
+		return this.refreshing;
 	}
 	modalManager() {
 		activateModal("myModal");
@@ -366,6 +389,7 @@ class FEMViewer {
 		DIV.innerHTML = "Ready!";
 	}
 	reset() {
+		this.corriendo = false;
 		const track = this.resource_tracker.track.bind(this.resource_tracker);
 
 		track(this.model);
@@ -668,6 +692,8 @@ class FEMViewer {
 			this.delta = this.delta % this.interval;
 		}
 		this.animationFrameID = requestAnimationFrame(this.update.bind(this));
+		this.refreshing = true;
+		this.updateRefresh();
 	}
 
 	resizeRendererToDisplaySize() {
@@ -893,20 +919,30 @@ class FEMViewer {
 		await allowUpdate();
 		this.updateU();
 		this.model.add(this.mesh);
-		this.model.add(this.contour);
 
 		this.scene.add(this.model);
 		this.scene.add(this.invisibleModel);
+		this.scene.add(this.model);
 		this.renderer.render(this.scene, this.camera);
 		this.zoomExtents();
+		this.updateLines();
 		window.addEventListener("resize", this.render.bind(this));
-		requestAnimationFrame(this.update.bind(this));
+		if (!this.corriendo) {
+			this.corriendo = true;
+			this.animationFrameID = requestAnimationFrame(
+				this.update.bind(this)
+			);
+			this.refreshing = true;
+			this.updateRefresh();
+		}
+		this.renderer.render(this.scene, this.camera);
+		this.zoomExtents();
+
 		DIV.innerHTML = "Drawing model..." + "⌛";
 		await allowUpdate();
 		DIV.innerHTML = "Done!";
 		await allowUpdate();
 		this.calculate_jacobians_worker();
-		console.log(this.renderer.info);
 	}
 	calculate_jacobians_worker() {
 		DIV.innerHTML = "Calculating jacobians..." + "⌛";

@@ -11,6 +11,10 @@
 		<link rel="stylesheet" href="./css/lilgui.light.css" />
 		<link
 			rel="stylesheet"
+			href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"
+		/>
+		<link
+			rel="stylesheet"
 			href="https://cdn.jsdelivr.net/npm/katex@0.16.2/dist/katex.min.css"
 			integrity="sha384-bYdxxUwYipFNohQlHt0bjN/LCpueqWz13HufFEV1SUatKs1cm4L6fFgCi1jT643X"
 			crossorigin="anonymous"
@@ -58,7 +62,19 @@
 		</div>
 		<div class="notification-container">
 			<div class="notification-bottom">
-				<p id="status-bar">Ready!</p>
+				<p class="notification-button">
+					<button
+						id="reload-button"
+						class="fa fa-refresh notification-action"
+					></button>
+				</p>
+				<p class="notification-button">
+					<button
+						id="play-button"
+						class="fa fa-pause notification-action"
+					></button>
+				</p>
+				<p id="status-bar" style="float: left">Ready!</p>
 			</div>
 		</div>
 
