@@ -15,6 +15,19 @@ body {
 	float: left;
 }
 
+.mini-box {
+	position: absolute;
+	background-color: white;
+	top: 0;
+	left: 0;
+	height: 200px;
+	width: 200px;
+	resize: both;
+	overflow: hidden;
+	border: solid 2px #f6f6f6;
+	border-radius: 6px;
+}
+
 .closed {
 	opacity: 0 !important;
 }

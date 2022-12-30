@@ -164,3 +164,6 @@ const resetButton = document.getElementById("reload-button");
 resetButton.addEventListener("click", () => {
 	const response = O.reload();
 });
+
+// Make the DIV element draggable:
+//dragElement(document.getElementById("element-view-container"));

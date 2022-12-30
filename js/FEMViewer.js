@@ -19,6 +19,51 @@ import {
 	LinealO2,
 } from "./build/Elements.js";
 
+function dragElement(elmnt) {
+	var pos1 = 0,
+		pos2 = 0,
+		pos3 = 0,
+		pos4 = 0;
+	if (document.getElementById(elmnt.id + "header")) {
+		// if present, the header is where you move the DIV from:
+		document.getElementById(elmnt.id + "header").onmousedown =
+			dragMouseDown;
+	} else {
+		// otherwise, move the DIV from anywhere inside the DIV:
+		elmnt.onmousedown = dragMouseDown;
+	}
+
+	function dragMouseDown(e) {
+		e = e || window.event;
+		e.preventDefault();
+		// get the mouse cursor position at startup:
+		pos3 = e.clientX;
+		pos4 = e.clientY;
+		document.onmouseup = closeDragElement;
+		// call a function whenever the cursor moves:
+		document.onmousemove = elementDrag;
+	}
+
+	function elementDrag(e) {
+		e = e || window.event;
+		e.preventDefault();
+		// calculate the new cursor position:
+		pos1 = pos3 - e.clientX;
+		pos2 = pos4 - e.clientY;
+		pos3 = e.clientX;
+		pos4 = e.clientY;
+		// set the element's new position:
+		elmnt.style.top = elmnt.offsetTop - pos2 + "px";
+		elmnt.style.left = elmnt.offsetLeft - pos1 + "px";
+	}
+
+	function closeDragElement() {
+		// stop moving when mouse button is released:
+		document.onmouseup = null;
+		document.onmousemove = null;
+	}
+}
+
 const types = {
 	B1V: Brick,
 	B2V: BrickO2,
@@ -31,6 +76,170 @@ const types = {
 	C2V: Serendipity,
 	L2V: LinealO2,
 };
+
+class ElementView {
+	static parent = document.getElementById("models-container");
+	constructor(element, parent) {
+		this.element = element;
+		this.parent = parent;
+		let canvas = this.createView();
+		this.canvas = canvas;
+		this.init();
+	}
+
+	init() {
+		const canvas = this.canvas;
+		this.renderer = new THREE.WebGLRenderer({
+			canvas,
+			antialias: true,
+			alpha: true,
+		});
+
+		const fov = 40;
+		const aspect = 2; // the canvas default
+		const near = 0.01;
+		const far = 200;
+
+		this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+		this.camera.position.z = 2;
+		this.controls = new OrbitControls(this.camera, this.canvas);
+		this.controls.target.set(0, 0, 0);
+		this.controls.update();
+
+		this.scene = new THREE.Scene();
+
+		const geometry = this.element.geometry;
+
+		this.material = new THREE.MeshLambertMaterial({
+			color: "#dc2c41",
+			emissive: "#dc2c41",
+			vertexColors: true,
+		});
+		this.line_material = new THREE.LineBasicMaterial({
+			color: "black",
+			linewidth: 3,
+		});
+		this.contour = new THREE.LineSegments(
+			this.element.line_geometry,
+			this.line_material
+		);
+		this.mesh = new THREE.Mesh(geometry, this.material);
+		this.scene.add(this.mesh);
+		this.scene.add(this.contour);
+		this.render();
+		this.zoomExtents();
+		this.animationFrameID = requestAnimationFrame(this.update.bind(this));
+	}
+	dispose() {
+		cancelAnimationFrame(this.animationFrameID);
+		this.scene.remove.apply(this.scene, this.scene.children);
+		this.mesh.geometry.dispose();
+		this.controls.dispose();
+		this.mesh.material.dispose();
+		this.contour.geometry.dispose();
+		this.contour.material.dispose();
+		this.material.dispose();
+		this.line_material.dispose();
+		this.scene.clear();
+		this.renderer.dispose();
+	}
+	close() {
+		this.dispose();
+		this.root.remove();
+	}
+	createView() {
+		let root = document.createElement("div");
+		root.setAttribute("id", "element-view-container-" + this.element.index);
+		root.setAttribute("class", "mini-box");
+		let canvas = document.createElement("canvas");
+
+		canvas.setAttribute("id", "element-view-" + this.element.index);
+		canvas.setAttribute("class", "box side-pane");
+
+		let header = document.createElement("div");
+		header.setAttribute(
+			"id",
+			"element-view-container-" + this.element.index + "header"
+		);
+		header.setAttribute("class", "header-element-viewer");
+		header.innerHTML =
+			"<i class='fa-regular fa-solid fa-up-down-left-right'></i> Element " +
+			this.element.index;
+		let closeButton = document.createElement("i");
+		//canvas.setAttribute("id", "element-view-" + this.element.index);
+		closeButton.setAttribute("class", "fa-solid fa-xmark");
+		closeButton.setAttribute("style", "position:absolute;right: 10px;");
+		closeButton.addEventListener("click", () => {
+			this.parent.destroy_element_view(this);
+		});
+		header.appendChild(closeButton);
+		root.appendChild(canvas);
+		root.appendChild(header);
+		ElementView.parent.appendChild(root);
+		dragElement(root);
+		this.root = root;
+
+		return canvas;
+	}
+	zoomExtents() {
+		let vFoV = this.camera.getEffectiveFOV();
+		let hFoV = this.camera.fov * this.camera.aspect;
+
+		let FoV = Math.min(vFoV, hFoV);
+		let FoV2 = FoV / 2;
+
+		let dir = new THREE.Vector3();
+		this.camera.getWorldDirection(dir);
+
+		let bb = this.mesh.geometry.boundingBox;
+		let bs = this.mesh.geometry.boundingSphere;
+		let bsWorld = bs.center.clone();
+		this.mesh.localToWorld(bsWorld);
+
+		let th = (FoV2 * Math.PI) / 180.0;
+		let sina = Math.sin(th);
+		let R = bs.radius;
+		let FL = R / sina;
+
+		let cameraDir = new THREE.Vector3();
+		this.camera.getWorldDirection(cameraDir);
+
+		let cameraOffs = cameraDir.clone();
+		cameraOffs.multiplyScalar(-FL);
+		let newCameraPos = bsWorld.clone().add(cameraOffs);
+
+		this.camera.position.copy(newCameraPos);
+		this.camera.lookAt(bsWorld);
+		this.controls.target.copy(bsWorld);
+
+		this.controls.update();
+	}
+	resizeRendererToDisplaySize() {
+		const canvas = this.renderer.domElement;
+		const pixelRatio = window.devicePixelRatio;
+		const width = (canvas.clientWidth * pixelRatio) | 0;
+		const height = (canvas.clientHeight * pixelRatio) | 0;
+		const needResize = canvas.width !== width || canvas.height !== height;
+		if (needResize) {
+			this.renderer.setSize(width, height, false);
+		}
+		return needResize;
+	}
+	render(delta) {
+		if (this.resizeRendererToDisplaySize()) {
+			const canvas = this.renderer.domElement;
+			const aspect = canvas.clientWidth / canvas.clientHeight;
+			this.camera.aspect = aspect;
+			this.camera.updateProjectionMatrix();
+		}
+		this.renderer.render(this.scene, this.camera);
+	}
+
+	update() {
+		this.render(0);
+		this.animationFrameID = requestAnimationFrame(this.update.bind(this));
+	}
+}
 
 //SOURCE https://r105.threejsfundamentals.org/threejs/lessons/threejs-cleanup.html
 class ResourceTracker {
@@ -127,6 +336,7 @@ class FEMViewer {
 			magnif = 0;
 		}
 		// FEM
+		this.element_views = new Set();
 		this.refreshing = true;
 		this.corriendo = false;
 		this.animationFrameID = undefined;
@@ -407,6 +617,9 @@ class FEMViewer {
 		this.mergedLineGeometry.dispose();
 		this.renderer.renderLists.dispose();
 		this.material.dispose();
+
+		this.destroy_element_views();
+		this.element_views = new Set();
 
 		this.resource_tracker.dispose();
 
@@ -832,6 +1045,26 @@ class FEMViewer {
 		if (this.colors) {
 			this.renderer.render(this.uiScene, this.orthoCamera);
 		}
+	}
+
+	createElementView(e) {
+		let element_view = new ElementView(e, this);
+		this.element_views.add(element_view);
+		//this.show_element_views();
+	}
+	show_element_views() {
+		for (const ev of this.element_views) {
+			ev.show();
+		}
+	}
+	destroy_element_views() {
+		for (const ev of this.element_views) {
+			this.destroy_element_views(ev);
+		}
+	}
+	destroy_element_view(ev) {
+		ev.close();
+		this.element_views.delete(ev);
 	}
 
 	addExamples(file_paths, b, a) {
@@ -1316,6 +1549,7 @@ class FEMViewer {
 			) {
 				colors.push(1, 1, 1);
 			}
+			this.elements[i].index = i;
 
 			this.elements[i].geometry.setAttribute(
 				"color",
@@ -1350,7 +1584,7 @@ class FEMViewer {
 	}
 	onDocumentMouseDown(event) {
 		if (this.loaded) {
-			if (this.clickMode == "Delete element") {
+			if (this.clickMode != "Nothing") {
 				this.updateColorValues();
 				event.preventDefault();
 				const mouse3D = new THREE.Vector2(
@@ -1364,34 +1598,39 @@ class FEMViewer {
 				);
 				if (intersects.length > 0) {
 					const i = intersects[0].object.userData.elementId;
-					intersects[0].object.geometry.dispose();
-					intersects[0].object.material.dispose();
-					this.invisibleModel.remove(intersects[0].object);
-					this.not_draw_elements.push(i);
-					this.bufferGeometries[i].dispose();
-					this.bufferLines[i].dispose();
 					const e = this.elements[i];
-					const colors = this.bufferGeometries[i].attributes.color;
-					for (let j = 0; j < e.order.length; j++) {
-						let disp = e.colors[j];
-						const color = this.lut.getColor(disp);
-						colors.setXYZ(j, 1, 1, 1);
-					}
-					e.geometry.dispose();
-					this.elements.splice(i, 1);
-					this.bufferGeometries.splice(i, 1);
-					this.bufferLines.splice(i, 1);
+					if (this.clickMode == "Delete element") {
+						intersects[0].object.geometry.dispose();
+						intersects[0].object.material.dispose();
+						this.invisibleModel.remove(intersects[0].object);
+						this.not_draw_elements.push(i);
+						this.bufferGeometries[i].dispose();
+						this.bufferLines[i].dispose();
+						e.geometry.dispose();
+						this.elements.splice(i, 1);
+						this.bufferGeometries.splice(i, 1);
+						this.bufferLines.splice(i, 1);
 
-					this.updateGeometry();
-					for (
-						let i = 0;
-						i < this.invisibleModel.children.length;
-						i++
-					) {
-						this.invisibleModel.children[i].userData = {
-							elementId: i,
-						};
+						for (
+							let i = 0;
+							i < this.invisibleModel.children.length;
+							i++
+						) {
+							this.invisibleModel.children[i].userData = {
+								elementId: i,
+							};
+						}
+					} else if (this.clickMode == "Inspect element") {
+						const colors =
+							this.bufferGeometries[i].attributes.color;
+						for (let j = 0; j < e.order.length; j++) {
+							let disp = e.colors[j];
+							const color = this.lut.getColor(disp);
+							colors.setXYZ(j, 1, 1, 1);
+						}
+						this.createElementView(e);
 					}
+					this.updateGeometry();
 				}
 			}
 		}
