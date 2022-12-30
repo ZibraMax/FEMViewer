@@ -1059,7 +1059,7 @@ class FEMViewer {
 	}
 	destroy_element_views() {
 		for (const ev of this.element_views) {
-			this.destroy_element_views(ev);
+			this.destroy_element_view(ev);
 		}
 	}
 	destroy_element_view(ev) {
