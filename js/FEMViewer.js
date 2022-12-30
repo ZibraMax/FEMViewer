@@ -130,6 +130,7 @@ class FEMViewer {
 		this.corriendo = false;
 		this.animationFrameID = undefined;
 		this.min_search_radius = -Infinity;
+		this.not_draw_elements = [];
 		this.max_color_value = 0;
 		this.min_color_value = 0;
 		this.initial_zoom = iz;
@@ -170,6 +171,7 @@ class FEMViewer {
 		});
 		this.renderer.autoClear = false;
 
+		this.not_draw_elements = [];
 		this.delta = 0;
 		this.interval = 1 / 60;
 		this.clock = new THREE.Clock();
@@ -281,11 +283,34 @@ class FEMViewer {
 		}
 		return [false, potential];
 	}
-	detectBorderElements2() {
+
+	async createOctree() {
+		DIV.innerHTML = "Creating Oct Tree... ⌛";
+		let bounding = new Quadrant3D(this.center, this.dimens);
+		this.OctTree = new Geometree(bounding);
+		let times = 0;
+		for (let i = 0; i < this.elements.length; i++) {
+			let p = { _xcenter: this.elements[i]._xcenter.slice(), id: i };
+			this.OctTree.add_point(p);
+			let percentage = (i / this.elements.length) * 100;
+			if (percentage > times) {
+				times += 10;
+				DIV.innerHTML =
+					"Creating Oct Tree  " +
+					'<progress value="' +
+					percentage +
+					'" max="100"> any% </progress>';
+				await allowUpdate();
+			}
+		}
+	}
+	async detectBorderElements2() {
+		await this.createOctree();
 		this.calculate_border_elements_worker();
 	}
 
-	detectBorderElements() {
+	async detectBorderElements() {
+		await this.createOctree();
 		this.before_load();
 		this.visited = new Array(this.elements.length).fill(false);
 		console.log("Encontrando elementos de borde");
@@ -356,6 +381,7 @@ class FEMViewer {
 		this.mergedGeometry.dispose();
 		this.mergedLineGeometry.dispose();
 		this.renderer.renderLists.dispose();
+		this.material.dispose();
 
 		this.resource_tracker.dispose();
 
@@ -380,6 +406,8 @@ class FEMViewer {
 		this.scene.remove(this.invisibleModel);
 		delete this.mergedGeometry;
 		delete this.mergedLineGeometry;
+		this.resource_tracker.untrack(this.model);
+		this.resource_tracker.untrack(this.invisibleModel);
 	}
 
 	settings() {
@@ -872,9 +900,9 @@ class FEMViewer {
 		this.renderer.render(this.scene, this.camera);
 		this.zoomExtents();
 		window.addEventListener("resize", this.render.bind(this));
+		requestAnimationFrame(this.update.bind(this));
 		DIV.innerHTML = "Drawing model..." + "⌛";
 		await allowUpdate();
-		requestAnimationFrame(this.update.bind(this));
 		DIV.innerHTML = "Done!";
 		await allowUpdate();
 		this.calculate_jacobians_worker();
@@ -1157,10 +1185,8 @@ class FEMViewer {
 			(math.max(secon_coords[1]) + math.min(secon_coords[1])) / 2;
 		let centerz =
 			(math.max(secon_coords[2]) + math.min(secon_coords[2])) / 2;
-		let center = [centerx, centery, centerz];
-		let dimens = [sizex, sizey, sizez];
-		let bounding = new Quadrant3D(center, dimens);
-		this.OctTree = new Geometree(bounding);
+		this.center = [centerx, centery, centerz];
+		this.dimens = [sizex, sizey, sizez];
 		for (let i = 0; i < this.nodes.length; i++) {
 			this.nodes[i][0] -= sizex / 2;
 			this.nodes[i][1] -= sizey / 2;
@@ -1241,9 +1267,6 @@ class FEMViewer {
 				this.min_search_radius,
 				2 * d ** 0.5
 			);
-
-			let p = { _xcenter: this.elements[i]._xcenter.slice(), id: i };
-			this.OctTree.add_point(p);
 			const colors = [];
 			for (
 				let j = 0;
@@ -1299,6 +1322,12 @@ class FEMViewer {
 			);
 			if (intersects.length > 0) {
 				const i = intersects[0].object.userData.elementId;
+				intersects[0].object.geometry.dispose();
+				intersects[0].object.material.dispose();
+				this.invisibleModel.remove(intersects[0].object);
+				this.not_draw_elements.push(i);
+				this.bufferGeometries[i].dispose();
+				this.bufferLines[i].dispose();
 				const e = this.elements[i];
 				const colors = this.bufferGeometries[i].attributes.color;
 				for (let j = 0; j < e.order.length; j++) {
@@ -1306,7 +1335,15 @@ class FEMViewer {
 					const color = this.lut.getColor(disp);
 					colors.setXYZ(j, 1, 1, 1);
 				}
+				e.geometry.dispose();
+				this.elements.splice(i, 1);
+				this.bufferGeometries.splice(i, 1);
+				this.bufferLines.splice(i, 1);
+
 				this.updateGeometry();
+				for (let i = 0; i < this.invisibleModel.children.length; i++) {
+					this.invisibleModel.children[i].userData = { elementId: i };
+				}
 			}
 		}
 	}
