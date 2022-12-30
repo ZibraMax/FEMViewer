@@ -32,6 +32,72 @@ const types = {
 	L2V: LinealO2,
 };
 
+//SOURCE https://r105.threejsfundamentals.org/threejs/lessons/threejs-cleanup.html
+class ResourceTracker {
+	constructor() {
+		this.resources = new Set();
+	}
+	track(resource) {
+		if (!resource) {
+			return resource;
+		}
+
+		// handle children and when material is an array of materials or
+		// uniform is array of textures
+		if (Array.isArray(resource)) {
+			resource.forEach((resource) => this.track(resource));
+			return resource;
+		}
+
+		if (resource.dispose || resource instanceof THREE.Object3D) {
+			this.resources.add(resource);
+		}
+		if (resource instanceof THREE.Object3D) {
+			this.track(resource.geometry);
+			this.track(resource.material);
+			this.track(resource.children);
+		} else if (resource instanceof THREE.Material) {
+			// We have to check if there are any textures on the material
+			for (const value of Object.values(resource)) {
+				if (value instanceof THREE.Texture) {
+					this.track(value);
+				}
+			}
+			// We also have to check if any uniforms reference textures or arrays of textures
+			if (resource.uniforms) {
+				for (const value of Object.values(resource.uniforms)) {
+					if (value) {
+						const uniformValue = value.value;
+						if (
+							uniformValue instanceof THREE.Texture ||
+							Array.isArray(uniformValue)
+						) {
+							this.track(uniformValue);
+						}
+					}
+				}
+			}
+		}
+		return resource;
+	}
+	untrack(resource) {
+		this.resources.delete(resource);
+	}
+	dispose() {
+		for (const resource of this.resources) {
+			if (resource instanceof THREE.Object3D) {
+				if (resource.parent) {
+					resource.parent.remove(resource);
+				}
+			}
+			if (resource.dispose) {
+				resource.dispose();
+			}
+		}
+		this.resources.clear();
+	}
+}
+
 const DIV = document.getElementById("status-bar");
 
 function allowUpdate() {
@@ -72,6 +138,7 @@ class FEMViewer {
 		this.canvas = canvas;
 		this.max_color_value_slider = undefined;
 		this.min_color_value_slider = undefined;
+		this.resource_tracker = new ResourceTracker();
 
 		this.before_load = () => {};
 		this.after_load = () => {};
@@ -274,6 +341,11 @@ class FEMViewer {
 		DIV.innerHTML = "Ready!";
 	}
 	reset() {
+		const track = this.resource_tracker.track.bind(this.resource_tracker);
+
+		track(this.model);
+		track(this.invisibleModel);
+
 		this.animate = false;
 		this.colorOptions = "nocolor";
 		for (let i = 0; i < this.elements.length; i++) {
@@ -281,21 +353,14 @@ class FEMViewer {
 			this.bufferGeometries.pop().dispose();
 			this.bufferLines.pop().dispose();
 		}
-		this.invisibleModel = new THREE.Object3D();
-		this.model.remove(this.mesh);
-		this.model.remove(this.contour);
-		this.config_dict = CONFIG_DICT["GENERAL"];
-
-		this.solution_as_displacement = false;
-
 		this.mergedGeometry.dispose();
 		this.mergedLineGeometry.dispose();
-		this.mesh.geometry.dispose();
-		this.mesh.material.dispose();
-		this.contour.geometry.dispose();
-		this.contour.material.dispose();
-
 		this.renderer.renderLists.dispose();
+
+		this.resource_tracker.dispose();
+
+		this.config_dict = CONFIG_DICT["GENERAL"];
+		this.solution_as_displacement = false;
 		this.bufferGeometries = [];
 		this.bufferLines = [];
 		this.variable_as_displacement = 2;
@@ -1199,7 +1264,6 @@ class FEMViewer {
 			);
 			messh.visible = false;
 			messh.userData = { elementId: i };
-
 			this.invisibleModel.add(messh);
 
 			let percentage = (i / this.dictionary.length) * 100;
