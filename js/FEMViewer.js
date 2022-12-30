@@ -197,6 +197,7 @@ class FEMViewer {
 		this.loaded = false;
 		this.colorOptions = "nocolor";
 		this.settings();
+		this.clickMode = "Inspect element";
 	}
 	updateRefresh() {
 		const playButton = document.getElementById("play-button");
@@ -503,6 +504,10 @@ class FEMViewer {
 			.listen()
 			.name("Solution as disp")
 			.onFinishChange(this.toogleSolutionAsDisp.bind(this));
+		this.gui
+			.add(this, "clickMode", ["Inspect element", "Delete element"])
+			.listen()
+			.name("Click mode");
 	}
 	toogleSolutionAsDisp() {
 		this.config_dict["displacements"] = this.solution_as_displacement;
@@ -1345,40 +1350,48 @@ class FEMViewer {
 	}
 	onDocumentMouseDown(event) {
 		if (this.loaded) {
-			this.updateColorValues();
-			event.preventDefault();
-			const mouse3D = new THREE.Vector2(
-				(event.clientX / window.innerWidth) * 2 - 1,
-				-(event.clientY / window.innerHeight) * 2 + 1
-			);
-			const raycaster = new THREE.Raycaster();
-			raycaster.setFromCamera(mouse3D, this.camera);
-			const intersects = raycaster.intersectObjects(
-				this.invisibleModel.children
-			);
-			if (intersects.length > 0) {
-				const i = intersects[0].object.userData.elementId;
-				intersects[0].object.geometry.dispose();
-				intersects[0].object.material.dispose();
-				this.invisibleModel.remove(intersects[0].object);
-				this.not_draw_elements.push(i);
-				this.bufferGeometries[i].dispose();
-				this.bufferLines[i].dispose();
-				const e = this.elements[i];
-				const colors = this.bufferGeometries[i].attributes.color;
-				for (let j = 0; j < e.order.length; j++) {
-					let disp = e.colors[j];
-					const color = this.lut.getColor(disp);
-					colors.setXYZ(j, 1, 1, 1);
-				}
-				e.geometry.dispose();
-				this.elements.splice(i, 1);
-				this.bufferGeometries.splice(i, 1);
-				this.bufferLines.splice(i, 1);
+			if (this.clickMode == "Delete element") {
+				this.updateColorValues();
+				event.preventDefault();
+				const mouse3D = new THREE.Vector2(
+					(event.clientX / window.innerWidth) * 2 - 1,
+					-(event.clientY / window.innerHeight) * 2 + 1
+				);
+				const raycaster = new THREE.Raycaster();
+				raycaster.setFromCamera(mouse3D, this.camera);
+				const intersects = raycaster.intersectObjects(
+					this.invisibleModel.children
+				);
+				if (intersects.length > 0) {
+					const i = intersects[0].object.userData.elementId;
+					intersects[0].object.geometry.dispose();
+					intersects[0].object.material.dispose();
+					this.invisibleModel.remove(intersects[0].object);
+					this.not_draw_elements.push(i);
+					this.bufferGeometries[i].dispose();
+					this.bufferLines[i].dispose();
+					const e = this.elements[i];
+					const colors = this.bufferGeometries[i].attributes.color;
+					for (let j = 0; j < e.order.length; j++) {
+						let disp = e.colors[j];
+						const color = this.lut.getColor(disp);
+						colors.setXYZ(j, 1, 1, 1);
+					}
+					e.geometry.dispose();
+					this.elements.splice(i, 1);
+					this.bufferGeometries.splice(i, 1);
+					this.bufferLines.splice(i, 1);
 
-				this.updateGeometry();
-				for (let i = 0; i < this.invisibleModel.children.length; i++) {
-					this.invisibleModel.children[i].userData = { elementId: i };
+					this.updateGeometry();
+					for (
+						let i = 0;
+						i < this.invisibleModel.children.length;
+						i++
+					) {
+						this.invisibleModel.children[i].userData = {
+							elementId: i,
+						};
+					}
 				}
 			}
 		}
