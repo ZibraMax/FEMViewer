@@ -45,6 +45,12 @@ if (queryString != "") {
 	}
 }
 
+if (vis_param) {
+	document
+		.getElementById("notification-container")
+		.setAttribute("style", "visibility: hidden");
+}
+
 let path = `./resources/${path_str}.json`;
 if (path_str.startsWith("https://")) {
 	path = path_str;
@@ -62,9 +68,11 @@ document.addEventListener("visibilitychange", (e) =>
 	O.handleVisibilityChange(e)
 );
 const gui = document.querySelector(".root");
+
 if (!vis_param) {
 	gui.classList.add("alwaysOpen");
 }
+
 const file_input = document.getElementById("json-file-input");
 
 function openFiles(evt) {
