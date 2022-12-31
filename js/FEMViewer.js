@@ -141,6 +141,13 @@ class ElementView {
 		}
 		this.mesh.geometry = this.element.geometry;
 		this.mesh.material = this.material;
+		if (this.parent.colorOptions == "nocolor") {
+			const material = new THREE.MeshLambertMaterial({
+				color: "#dc2c41",
+				emissive: "#dc2c41",
+			});
+			this.mesh.material = material;
+		}
 		this.mesh.material.needsUpdate = true;
 		this.scene.children[0].geometry.attributes.color.needsUpdate = true;
 		let msg = `X = -, Y = -, Z = -, Value = -`;
