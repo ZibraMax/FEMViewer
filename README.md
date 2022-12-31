@@ -1,7 +1,7 @@
 # FEM Viewer
 
 Try it online!!
-[https://zibramax.github.io/FEMViewer/](<[images/START.gif](https://zibramax.github.io/FEMViewer/)>)
+[https://zibramax.github.io/FEMViewer/](https://zibramax.github.io/FEMViewer/)
 
 ![](images/START.gif)
 
