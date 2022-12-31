@@ -297,14 +297,13 @@ class Element {
 		let variable = this.Ue;
 		let result = 0;
 		if (colorMode == "dispmag") {
-			for (let i = 0; i < this.order.length; i++) {
-				const gdl = this.order[i];
+			for (let i = 0; i < this.Ue[0].length; i++) {
 				let color = 0.0;
 				for (let j = 0; j < this.nvn; j++) {
-					let v = variable[j][gdl];
+					let v = variable[j][i];
 					color += v ** 2;
 				}
-				solution[gdl] = color ** 0.5;
+				solution[i] = color ** 0.5;
 			}
 			for (let i = 0; i < P.length; i++) {
 				result += P[i] * solution[i];
@@ -1166,6 +1165,9 @@ class TriangularO2 extends Triangular {
 	constructor(coords, gdls, tama) {
 		super(coords, gdls, tama);
 		this.type = "T2V";
+		let c = [coords[0], coords[1], coords[2]];
+		let gdl = [-1, -1, -1];
+		this.auxE = new Triangular(c, gdl, 0.2);
 	}
 	psi(z) {
 		return [
@@ -1186,6 +1188,9 @@ class TriangularO2 extends Triangular {
 			[4.0 * z[1], 4.0 * z[0]],
 			[-4.0 * z[1], -8.0 * z[1] - 4.0 * z[0] + 4.0],
 		];
+	}
+	inverseMapping(xo, giveP) {
+		return this.auxE.inverseMapping(xo, giveP);
 	}
 }
 

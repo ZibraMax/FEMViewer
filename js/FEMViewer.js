@@ -296,7 +296,7 @@ class ElementView {
 				this.parent.colorOptions,
 				this.parent.config_dict["calculateStrain"]
 			);
-			if (value.toFixed(4) == "0.0000") {
+			if (Math.abs(value).toFixed(4) == "0.0000") {
 				value = value.toExponential(4);
 			} else {
 				value = value.toFixed(4);
