@@ -310,6 +310,12 @@ class Element {
 			}
 		} else if (colorMode == "scaled_jac") {
 			result = this.sJ;
+		} else if (colorMode[0] == "PROP") {
+			if (colorMode[1] instanceof Array) {
+				result = colorMode[1][this.index];
+			} else {
+				result = colorMode[1];
+			}
 		} else if (strain && colorMode != "nocolor") {
 			let epsilon = [0, 0, 0, 0, 0, 0];
 			if (du.length == 3) {
@@ -349,6 +355,14 @@ class Element {
 		} else if (colorMode == "scaled_jac") {
 			for (let i = 0; i < this.order.length; i++) {
 				this.colors[i] = this.sJ;
+			}
+		} else if (colorMode[0] == "PROP") {
+			if (colorMode[1] instanceof Array) {
+				this.colors = Array(this.order.length).fill(
+					colorMode[1][this.index]
+				);
+			} else {
+				this.colors = Array(this.order.length).fill(colorMode[1]);
 			}
 		} else if (strain && colorMode != "nocolor") {
 			variable = this.epsilons;

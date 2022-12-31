@@ -78,6 +78,7 @@ class FEMViewer {
 		this.max_color_value_slider = undefined;
 		this.min_color_value_slider = undefined;
 		this.resource_tracker = new ResourceTracker();
+		this.raycaster = new THREE.Raycaster();
 
 		this.before_load = () => {};
 		this.after_load = () => {};
@@ -553,11 +554,17 @@ class FEMViewer {
 		this.updateGeometry();
 	}
 	updateColorVariable() {
+		let msg = "";
 		const co = this.colorOptions;
 		if (co != "nocolor") {
 			this.colors = true;
+			msg =
+				"Showing " +
+				this.color_select_option.$select.value +
+				" as color.";
 		} else {
 			this.colors = false;
+			msg = "Showing geometry.";
 		}
 		for (const e of this.elements) {
 			e.setMaxDispNode(
@@ -589,6 +596,17 @@ class FEMViewer {
 
 		this.max_color_value_slider.max(max_disp);
 		this.max_color_value_slider.min(min_disp);
+		let max_str = this.max_color_value.toFixed(4);
+		let min_str = this.min_color_value.toFixed(4);
+		if (Math.abs(max_str) == "0.0000") {
+			max_str = this.max_color_value.toExponential(4);
+		}
+		if (Math.abs(min_str) == "0.0000") {
+			min_str = this.min_color_value.toExponential(4);
+		}
+
+		msg += " Max=" + max_str + " Min=" + min_str;
+		DIV.innerHTML = msg;
 		this.updateLut();
 	}
 	updateCamera() {
@@ -1109,9 +1127,12 @@ class FEMViewer {
 			}
 		}
 		this.element_properties = {};
+		let prop_dict = {};
 		for (const p of this.config_dict["props"]) {
 			this.element_properties[p] = jsondata["properties"][p];
+			prop_dict[p] = ["PROP", this.element_properties[p]];
 		}
+
 		if (this.config_dict["displacements"]) {
 			this.sadguib.disable();
 		} else {
@@ -1124,12 +1145,13 @@ class FEMViewer {
 		}
 		let dict = this.config_dict["dict"];
 		this.guifolder = this.gui.addFolder("Solutions");
-		this.guifolder
+		this.color_select_option = this.guifolder
 			.add(this, "colorOptions", {
 				"No color": "nocolor",
 				"\\(|U|\\)": "dispmag",
 				"Scaled Jacobian": "scaled_jac",
 				...dict,
+				...prop_dict,
 			})
 			.name("Show color")
 			.listen()
@@ -1321,9 +1343,8 @@ class FEMViewer {
 					(event.clientX / window.innerWidth) * 2 - 1,
 					-(event.clientY / window.innerHeight) * 2 + 1
 				);
-				const raycaster = new THREE.Raycaster();
-				raycaster.setFromCamera(mouse3D, this.camera);
-				const intersects = raycaster.intersectObjects(
+				this.raycaster.setFromCamera(mouse3D, this.camera);
+				const intersects = this.raycaster.intersectObjects(
 					this.invisibleModel.children
 				);
 				if (intersects.length > 0) {
