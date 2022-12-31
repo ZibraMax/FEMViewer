@@ -161,7 +161,7 @@ class Element {
 	}
 	T(_z) {
 		let p = this.psi(_z);
-		return [multiply(p, this.coords_o), p];
+		return [multiply([p], this.coords_o), p];
 	}
 	async calculateJacobian() {
 		return new Promise((resolve) => {
@@ -192,20 +192,39 @@ class Element {
 		this.scaledJacobian = min_j / Math.abs(max_j);
 		return min_j / Math.abs(max_j);
 	}
-	// inverseMapping(x0) {
-	// 	let zi = [0.15, 0.15, 0.15];
-	// 	for (let i = 0; i < 100; i++) {
-	// 		const xi = math.add(x0, multiply(this.T(zi)[0], -1));
-	// 		const [J, dpz] = this.J(zi);
-	// 		const _J = math.inv(J);
-	// 		const dz = multiply(_J, xi);
-	// 		zi = math.add(zi, dz);
-	// 		if (sum(math.abs(dz)) < 0.0000001) {
-	// 			return zi;
-	// 		}
-	// 	}
-	// 	return zi;
-	// }
+	inverseMapping(xo, giveP) {
+		const x0 = [];
+		for (let i = 0; i < this.ndim; i++) {
+			x0.push(xo[i]);
+		}
+		let p = undefined;
+		let zi = new Array(this.ndim).fill(1 / 3);
+		let li = -1;
+		if (this instanceof Triangular) {
+			li = 0;
+		}
+		for (let i = 0; i < 100; i++) {
+			let [puntos, pp] = this.T(zi);
+			p = pp;
+			let punot = puntos[0];
+			let xi = math.add(x0, math.multiply(punot, -1));
+			let [J, dpz] = this.J(zi);
+			let _J = math.inv(J);
+			let dz = math.multiply(_J, xi);
+			zi = math.add(zi, dz);
+			if (sum(math.abs(dz)) < 0.00001) {
+				break;
+			}
+			for (let j = 0; j < zi.length; j++) {
+				zi[j] = Math.max(zi[j], li);
+				zi[j] = Math.min(zi[j], 1);
+			}
+		}
+		if (giveP) {
+			return p;
+		}
+		return zi;
+	}
 	giveSecondVariableSolution(strain = false) {
 		this.dus = [];
 		try {
@@ -228,7 +247,7 @@ class Element {
 			let im = this.inverseMapping(X);
 			for (let i = 0; i < this.domain.length; i++) {
 				let p = this.domain[i];
-				let resta = sum(
+				let resta = math.sum(
 					...[
 						(im[0] - p[0]) ** 2,
 						(im[1] - p[1]) ** 2,
@@ -267,6 +286,53 @@ class Element {
 			}
 		}
 		return res;
+	}
+	giveSolutionPoint(z, colorMode, strain) {
+		let solution = Array(this.Ue[0].length).fill(0.0);
+		let [x, P] = this.T(z);
+		let [J, dpz] = this.J(z);
+		const _J = math.inv(J);
+		const dpx = math.multiply(_J, dpz);
+		let du = multiply(this.Ue, transpose(dpx));
+		let variable = this.Ue;
+		let result = 0;
+		if (colorMode == "dispmag") {
+			for (let i = 0; i < this.order.length; i++) {
+				const gdl = this.order[i];
+				let color = 0.0;
+				for (let j = 0; j < this.nvn; j++) {
+					let v = variable[j][gdl];
+					color += v ** 2;
+				}
+				solution[gdl] = color ** 0.5;
+			}
+			for (let i = 0; i < P.length; i++) {
+				result += P[i] * solution[i];
+			}
+		} else if (colorMode == "scaled_jac") {
+			result = this.sJ;
+		} else if (strain && colorMode != "nocolor") {
+			let epsilon = [0, 0, 0, 0, 0, 0];
+			if (du.length == 3) {
+				const exx = du[0][0];
+				const eyy = du[1][1];
+				const ezz = du[2][2];
+
+				const exy = du[0][1] + du[1][0];
+				const exz = du[0][2] + du[2][0];
+				const eyz = du[1][2] + du[2][1];
+				epsilon = [exx, eyy, ezz, exz, eyz, exy];
+			} else if (du.length == 2) {
+				const exx = du[0][0];
+				const eyy = du[1][1];
+				const exy = du[0][1] + du[1][0];
+				epsilon = [exx, eyy, exy];
+			}
+			result = epsilon[colorMode];
+		} else if (colorMode != "nocolor") {
+			result = du[colorMode[0]][colorMode[1]];
+		}
+		return result;
 	}
 	setMaxDispNode(colorMode, strain) {
 		this.colors = Array(this.order.length).fill(0.0);
@@ -342,6 +408,7 @@ class Brick extends Element3D {
 		this.type = "B1V";
 		this.nfaces = 6;
 		this.coords_o = coords;
+		this.ndim = 3;
 		this.domain = [
 			[-1, -1, -1],
 			[1, -1, -1],
@@ -499,7 +566,7 @@ class Tetrahedral extends Element3D {
 	constructor(coords, gdls) {
 		super(coords, gdls);
 		this.type = "TE1V";
-
+		this.ndim = 3;
 		this.nfaces = 4;
 		this.coords_o = coords;
 		this.domain = [
@@ -570,6 +637,7 @@ class Lineal extends Element3D {
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
 		this.type = "L1V";
+		this.ndim = 1;
 		const c = [];
 		for (let i = 0; i < coords.length; i++) {
 			const x = coords[i][0];
@@ -655,6 +723,7 @@ class Triangular extends Element3D {
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
 		this.type = "T1V";
+		this.ndim = 2;
 
 		const c = [];
 		for (let i = 0; i < coords.length; i++) {
@@ -754,6 +823,7 @@ class Quadrilateral extends Element3D {
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
 		this.type = "C1V";
+		this.ndim = 2;
 
 		const c = [];
 		for (let i = 0; i < coords.length; i++) {
