@@ -21,6 +21,6 @@
 		"_phi": null,
 		"G": [1],
 		"duration": 1,
-		"description": "FEM problem using the 2D Torsion formulation.,DOF: 1726,Elements: 769,Solver: lineal,EBC: 386,NBC: 0"
+		"description": ""
 	}
 }
