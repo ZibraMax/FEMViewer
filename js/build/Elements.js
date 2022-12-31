@@ -285,7 +285,7 @@ class Element {
 			for (let i = 0; i < this.order.length; i++) {
 				this.colors[i] = this.sJ;
 			}
-		} else if (strain) {
+		} else if (strain && colorMode != "nocolor") {
 			variable = this.epsilons;
 			for (let i = 0; i < this.order.length; i++) {
 				const gdl = this.order[i];
@@ -426,6 +426,7 @@ class Brick extends Element3D {
 			0.17146776, 0.27434842, 0.43895748, 0.27434842, 0.17146776,
 			0.27434842, 0.17146776,
 		];
+		this.colors = Array(this.order.length).fill(0.0);
 	}
 	psi(_z) {
 		const z = _z[0];
@@ -540,6 +541,7 @@ class Tetrahedral extends Element3D {
 			0.023088, 0.023088, 0.023088, 0.023088, 0.01857867, 0.01857867,
 			0.01857867, 0.01857867,
 		];
+		this.colors = Array(this.order.length).fill(0.0);
 	}
 	psi(_z) {
 		let x = _z[0];
@@ -616,6 +618,8 @@ class Lineal extends Element3D {
 			[0.0, h, 0.0],
 			[0.0, 0.0, 0.0],
 		];
+		this.colors = Array(this.order.length).fill(0.0);
+
 		this.Z = [[-0.77459667], [0], [0.77459667]];
 		this.W = [0.55555556, 0.88888889, 0.55555556];
 	}
@@ -729,6 +733,7 @@ class Triangular extends Element3D {
 			this.Z.push([X[i], Y[i]]);
 		}
 		this.W = [W0, W1, W1, W1, W2, W2, W2];
+		this.colors = Array(this.order.length).fill(0.0);
 	}
 	psi(_z) {
 		return [1.0 - _z[0] - _z[1], _z[0], _z[1]];
@@ -828,6 +833,7 @@ class Quadrilateral extends Element3D {
 			0.30864198, 0.49382716, 0.30864198, 0.49382716, 0.79012346,
 			0.49382716, 0.30864198, 0.49382716, 0.30864198,
 		];
+		this.colors = Array(this.order.length).fill(0.0);
 	}
 	psi(z) {
 		return [

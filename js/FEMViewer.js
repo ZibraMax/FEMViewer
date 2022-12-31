@@ -110,9 +110,7 @@ class ElementView {
 
 		const geometry = this.element.geometry;
 
-		this.material = new THREE.MeshLambertMaterial({
-			color: "#dc2c41",
-			emissive: "#dc2c41",
+		this.material = new THREE.MeshBasicMaterial({
 			vertexColors: true,
 		});
 		this.line_material = new THREE.LineBasicMaterial({
@@ -127,8 +125,25 @@ class ElementView {
 		this.scene.add(this.mesh);
 		this.scene.add(this.contour);
 		this.render();
+		this.updateGeometry();
 		this.zoomExtents();
 		this.animationFrameID = requestAnimationFrame(this.update.bind(this));
+	}
+	updateGeometry() {
+		for (let j = 0; j < this.element.order.length; j++) {
+			let disp = this.element.colors[j];
+			const color = this.parent.lut.getColor(disp);
+			this.element.geometry.attributes.color.setXYZ(
+				j,
+				color.r,
+				color.g,
+				color.b
+			);
+		}
+		this.mesh.geometry = this.element.geometry;
+		this.mesh.material = this.material;
+		this.mesh.material.needsUpdate = true;
+		this.scene.children[0].geometry.attributes.color.needsUpdate = true;
 	}
 	dispose() {
 		cancelAnimationFrame(this.animationFrameID);
@@ -161,7 +176,7 @@ class ElementView {
 			"id",
 			"element-view-container-" + this.element.index + "header"
 		);
-		header.setAttribute("class", "header-element-viewer");
+		header.setAttribute("class", "header-element-viewer noselect");
 		header.innerHTML =
 			"<i class='fa-regular fa-solid fa-up-down-left-right'></i> Element " +
 			this.element.index;
@@ -878,7 +893,7 @@ class FEMViewer {
 
 	updateMaterial() {
 		if (this.colors) {
-			this.material = new THREE.MeshLambertMaterial({
+			this.material = new THREE.MeshBasicMaterial({
 				vertexColors: true,
 			});
 			this.light2.intensity = 1.0;
@@ -999,6 +1014,9 @@ class FEMViewer {
 				false
 			);
 			this.contour.geometry = this.mergedLineGeometry;
+		}
+		for (const ev of this.element_views) {
+			ev.updateGeometry();
 		}
 	}
 
@@ -1621,13 +1639,6 @@ class FEMViewer {
 							};
 						}
 					} else if (this.clickMode == "Inspect element") {
-						const colors =
-							this.bufferGeometries[i].attributes.color;
-						for (let j = 0; j < e.order.length; j++) {
-							let disp = e.colors[j];
-							const color = this.lut.getColor(disp);
-							colors.setXYZ(j, 1, 1, 1);
-						}
 						this.createElementView(e);
 					}
 					this.updateGeometry();
