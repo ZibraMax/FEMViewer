@@ -100,7 +100,8 @@ class ElementView {
 		const far = 200;
 
 		this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-		this.camera.position.z = 2;
+		this.camera.position.set(25, 25, 25);
+		this.camera.lookAt(0, 0, 0);
 		this.controls = new OrbitControls(this.camera, this.canvas);
 		this.controls.target.set(0, 0, 0);
 		this.controls.update();
