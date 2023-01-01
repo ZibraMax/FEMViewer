@@ -1,6 +1,6 @@
 import * as THREE from "./build/three.module.js";
 import { OrbitControls } from "./build/OrbitControls.js";
-
+//import { fromElement } from "./build/Elements.js";
 function dragElement(elmnt) {
 	var pos1 = 0,
 		pos2 = 0,

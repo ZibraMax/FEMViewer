@@ -588,11 +588,29 @@ class Tetrahedral extends Element3D {
 			[0.0, 1.0, 0.0],
 			[0.0, 0.0, 1.0],
 		];
-		this.geometry = new THREE.TetrahedronGeometry(1);
+		this.geometry = new THREE.BoxGeometry(1, 1, 1);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
-		this.order = [1, 0, 2, 3, 2, 0, 3, 0, 1, 3, 1, 2];
-		this.line_order = [2, 0, 3, 0, 0, 1, 3, 1, 1, 2, 2, 3];
+		this.order = [
+			3, 2, 3, 1, 2, 3, 0, 3, 2, 2, 3, 3, 3, 3, 0, 1, 3, 3, 3, 3, 2, 2, 1,
+			0,
+		];
+		this.line_order = [
+			2, 3, 3, 2, 3, 0, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 2, 1, 0, 0,
+			2,
+		];
 		this.modifier = [
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
+			[0.0, 0.0, 0.0],
 			[0.0, 0.0, 0.0],
 			[0.0, 0.0, 0.0],
 			[0.0, 0.0, 0.0],
@@ -1250,6 +1268,19 @@ class Serendipity extends Quadrilateral {
 		];
 	}
 }
+
+const types = {
+	B1V: Brick,
+	B2V: BrickO2,
+	TE1V: Tetrahedral,
+	TE2V: TetrahedralO2,
+	L1V: Lineal,
+	T1V: Triangular,
+	T2V: TriangularO2,
+	C1V: Quadrilateral,
+	C2V: Serendipity,
+	L2V: LinealO2,
+};
 
 export {
 	Brick,
