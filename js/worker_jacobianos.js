@@ -31,7 +31,7 @@ onmessage = function (msg) {
 	let times = 0;
 	for (const dat of msg.data) {
 		i = i + 1;
-		const e = new types[dat.type](dat.coords, dat.gdls);
+		const e = new types[dat.type](dat.coords, dat.gdls, dat.tama);
 		workerResult.push(e.sJ);
 		let percentage = (i / n) * 100;
 		if (percentage > times) {

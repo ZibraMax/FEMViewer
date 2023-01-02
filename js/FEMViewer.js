@@ -65,6 +65,7 @@ class FEMViewer {
 		// FEM
 		this.element_views = new Set();
 		this.refreshing = true;
+		this.wireframe = false;
 		this.corriendo = false;
 		this.animationFrameID = undefined;
 		this.min_search_radius = -Infinity;
@@ -437,6 +438,11 @@ class FEMViewer {
 		this.gui.add(this, "rot").name("Rotation").listen();
 
 		this.gui
+			.add(this, "wireframe")
+			.listen()
+			.onChange(this.updateColorVariable.bind(this))
+			.name("Wireframe");
+		this.gui
 			.add(this, "draw_lines")
 			.onChange(this.updateLines.bind(this))
 			.name("Draw lines");
@@ -632,6 +638,7 @@ class FEMViewer {
 			this.material = new THREE.MeshLambertMaterial({
 				color: "#dc2c41",
 				emissive: "#dc2c41",
+				wireframe: this.wireframe,
 			});
 			this.light2.intensity = 0.0;
 			this.light.intensity = 1.0;
@@ -673,29 +680,8 @@ class FEMViewer {
 	updateMeshCoords() {
 		for (let i = 0; i < this.elements.length; i++) {
 			const e = this.elements[i];
-			const Ue = [];
-			if (this.solution_as_displacement) {
-				for (let j = Ue.length; j < 3; j++) {
-					if (j == this.variable_as_displacement) {
-						for (const ue of e.Ue) {
-							Ue.push(ue);
-						}
-					} else {
-						Ue.push(Array(e.coords.length).fill(0.0));
-					}
-				}
-			} else {
-				for (const ue of e.Ue) {
-					Ue.push(ue);
-				}
-				for (let j = Ue.length; j < 3; j++) {
-					Ue.push(Array(e.coords.length).fill(0.0));
-				}
-			}
-
 			if (this.draw_lines) {
 				e.setGeometryCoords(
-					Ue,
 					this.magnif * this.mult,
 					this.norm,
 					this.bufferGeometries[i],
@@ -703,7 +689,6 @@ class FEMViewer {
 				);
 			} else {
 				e.setGeometryCoords(
-					Ue,
 					this.magnif * this.mult,
 					this.norm,
 					this.bufferGeometries[i]
@@ -719,7 +704,7 @@ class FEMViewer {
 		for (let i = 0; i < this.elements.length; i++) {
 			const e = this.elements[i];
 			const colors = this.bufferGeometries[i].attributes.color;
-			for (let j = 0; j < e.order.length; j++) {
+			for (let j = 0; j < e.domain.length; j++) {
 				let disp = e.colors[j];
 				const color = this.lut.getColor(disp);
 				colors.setXYZ(j, color.r, color.g, color.b);
@@ -1236,7 +1221,14 @@ class FEMViewer {
 		}
 
 		for (const e of this.elements) {
-			e.setUe(this.U, this.config_dict["calculateStrain"]);
+			e.setUe(
+				this.U,
+				this.config_dict["calculateStrain"],
+				this.config_dict["displacements"]
+			);
+			if (this.solution_as_displacement) {
+				e.variableAsDisplacement(this.variable_as_displacement);
+			}
 		}
 		this.updateColorVariable();
 	}
@@ -1337,7 +1329,6 @@ class FEMViewer {
 	onDocumentMouseDown(event) {
 		if (this.loaded) {
 			if (this.clickMode != "Nothing") {
-				this.updateColorValues();
 				event.preventDefault();
 				const mouse3D = new THREE.Vector2(
 					(event.clientX / window.innerWidth) * 2 - 1,

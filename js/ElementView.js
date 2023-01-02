@@ -99,7 +99,7 @@ class ElementView {
 		this.animationFrameID = requestAnimationFrame(this.update.bind(this));
 	}
 	updateGeometry() {
-		for (let j = 0; j < this.element.order.length; j++) {
+		for (let j = 0; j < this.element.domain.length; j++) {
 			let disp = this.element.colors[j];
 			const color = this.parent.lut.getColor(disp);
 			this.element.geometry.attributes.color.setXYZ(
