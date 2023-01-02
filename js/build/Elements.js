@@ -192,7 +192,7 @@ class Element {
 		this.scaledJacobian = min_j / Math.abs(max_j);
 		return min_j / Math.abs(max_j);
 	}
-	inverseMapping(xo, giveP) {
+	inverseMapping(xo) {
 		const x0 = [];
 		for (let i = 0; i < this.ndim; i++) {
 			x0.push(xo[i]);
@@ -219,9 +219,6 @@ class Element {
 				zi[j] = Math.max(zi[j], li);
 				zi[j] = Math.min(zi[j], 1);
 			}
-		}
-		if (giveP) {
-			return p;
 		}
 		return zi;
 	}
@@ -570,6 +567,16 @@ class Brick extends Element3D {
 			],
 		];
 	}
+	transformation(geo) {
+		const Z = [];
+		for (let i = 0; i < geo.attributes.position.count; i++) {
+			const x = geo.attributes.position.getX(i);
+			const y = geo.attributes.position.getY(i);
+			const z = geo.attributes.position.getZ(i);
+			Z.push([x * 2, y * 2, z * 2]);
+		}
+		return Z;
+	}
 }
 
 class Tetrahedral extends Element3D {
@@ -660,6 +667,17 @@ class Tetrahedral extends Element3D {
 			[0.0 + kernell, 0.0 + kernell, 1.0 + kernell],
 		];
 	}
+	transformation(geo) {
+		const Z = [];
+		for (let i = 0; i < geo.attributes.position.count; i++) {
+			const x = geo.attributes.position.getX(i) + 0.5;
+			const y = geo.attributes.position.getY(i) + 0.5;
+			const z = geo.attributes.position.getZ(i) + 0.5;
+
+			Z.push([x * (1 - y) * (1 - z), y * (1 - z), z]);
+		}
+		return Z;
+	}
 }
 
 class Lineal extends Element3D {
@@ -667,6 +685,7 @@ class Lineal extends Element3D {
 	line_order;
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
+		this.tama = tama;
 		this.type = "L1V";
 		this.ndim = 1;
 		const c = [];
@@ -728,23 +747,15 @@ class Lineal extends Element3D {
 	dpsi(_z) {
 		return [[-0.5], [0.5]];
 	}
-}
-
-class LinealO2 extends Lineal {
-	constructor(coords, gdls, tama) {
-		super(coords, gdls, tama);
-		this.type = "L2V";
-	}
-	psi(z) {
-		let zm1 = z[0] + 1.0;
-		return [
-			1.0 - (3.0 / 2.0) * zm1 + (zm1 * zm1) / 2.0,
-			2.0 * zm1 * (1.0 - zm1 / 2.0),
-			(z / 2.0) * zm1,
-		];
-	}
-	dpsi(z) {
-		return [[z[0] - 0.5], [-2.0 * z[0]], [0.5 + z[0]]];
+	transformation(geo) {
+		const Z = [];
+		for (let i = 0; i < geo.attributes.position.count; i++) {
+			const x = geo.attributes.position.getX(i);
+			const y = geo.attributes.position.getY(i);
+			const z = geo.attributes.position.getZ(i);
+			Z.push([x * 2]);
+		}
+		return Z;
 	}
 }
 
@@ -755,6 +766,7 @@ class Triangular extends Element3D {
 		super(coords, gdls);
 		this.type = "T1V";
 		this.ndim = 2;
+		this.tama = tama;
 
 		const c = [];
 		for (let i = 0; i < coords.length; i++) {
@@ -846,6 +858,16 @@ class Triangular extends Element3D {
 			[0.0 * (1 + kernell), 1.0 * (1 + kernell)],
 		];
 	}
+	transformation(geo) {
+		const Z = [];
+		for (let i = 0; i < geo.attributes.position.count; i++) {
+			const x = geo.attributes.position.getX(i) + 0.5;
+			const y = geo.attributes.position.getY(i) + 0.5;
+			const z = geo.attributes.position.getZ(i) + 0.5;
+			Z.push([x * (1 - y), y]);
+		}
+		return Z;
+	}
 }
 
 class Quadrilateral extends Element3D {
@@ -853,6 +875,7 @@ class Quadrilateral extends Element3D {
 	line_order;
 	constructor(coords, gdls, tama) {
 		super(coords, gdls);
+		this.tama = tama;
 		this.type = "C1V";
 		this.ndim = 2;
 
@@ -951,6 +974,34 @@ class Quadrilateral extends Element3D {
 			[0.25 * (z[1] + 1.0), 0.25 * (1.0 + z[0])],
 			[-0.25 * (1.0 + z[1]), 0.25 * (1.0 - z[0])],
 		];
+	}
+	transformation(geo) {
+		const Z = [];
+		for (let i = 0; i < geo.attributes.position.count; i++) {
+			const x = geo.attributes.position.getX(i);
+			const y = geo.attributes.position.getY(i);
+			const z = geo.attributes.position.getZ(i);
+			Z.push([x * 2, y * 2]);
+		}
+		return Z;
+	}
+}
+
+class LinealO2 extends Lineal {
+	constructor(coords, gdls, tama) {
+		super(coords, gdls, tama);
+		this.type = "L2V";
+	}
+	psi(z) {
+		let zm1 = z[0] + 1.0;
+		return [
+			1.0 - (3.0 / 2.0) * zm1 + (zm1 * zm1) / 2.0,
+			2.0 * zm1 * (1.0 - zm1 / 2.0),
+			(z / 2.0) * zm1,
+		];
+	}
+	dpsi(z) {
+		return [[z[0] - 0.5], [-2.0 * z[0]], [0.5 + z[0]]];
 	}
 }
 
@@ -1282,6 +1333,18 @@ const types = {
 	L2V: LinealO2,
 };
 
+function fromElement(e) {
+	let nee = undefined;
+	if (e.tama) {
+		nee = new types[e.type](e.coords, e.gdls, e.tama);
+	} else {
+		nee = new types[e.type](e.coords, e.gdls);
+	}
+	nee = Object.assign(nee, e);
+	console.log(nee, e);
+	return nee;
+}
+
 export {
 	Brick,
 	BrickO2,
@@ -1295,4 +1358,5 @@ export {
 	LinealO2,
 	Element,
 	Element3D,
+	fromElement,
 };

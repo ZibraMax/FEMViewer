@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>TESTS</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link
+			rel="stylesheet"
+			type="text/css"
+			media="screen"
+			href="css/index.css"
+		/>
+	</head>
+	<body>
+		<canvas width="500" height="500" id="model-view"></canvas>
+
+		<script type="module">
+			import * as THREE from "./js/build/three.module.js";
+			import { OrbitControls } from "./js/build/OrbitControls.js";
+			import { AxisGridHelper } from "./js/build/minigui.js";
+
+			const canvas = document.getElementById("model-view");
+			THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
+			const renderer = new THREE.WebGLRenderer({
+				canvas,
+				antialias: true,
+				alpha: true,
+			});
+			const scene = new THREE.Scene();
+			const gh = new AxisGridHelper(scene, 4, 4, 4);
+
+			const fov = 40;
+			const aspect = 1; // the canvas default
+			const near = 0.01;
+			const far = 200;
+			const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+			camera.position.set(25, 25, 25);
+			camera.lookAt(0, 0, 0);
+			scene.add(camera);
+
+			const controls = new OrbitControls(camera, canvas);
+			controls.target.set(0, 0, 0);
+			controls.update();
+
+			// Lights
+			const light = new THREE.AmbientLight(0xffffff, 1.0);
+			scene.add(light);
+
+			const material = new THREE.MeshLambertMaterial({
+				color: "#dc2c41",
+				emissive: "#dc2c41",
+			});
+
+			const lineMaterial = new THREE.MeshLambertMaterial({
+				color: "white",
+				linewidth: 3,
+				wireframe: true,
+			});
+
+			const edgeMaterial = new THREE.LineBasicMaterial({
+				color: "black",
+				linewidth: 3,
+			});
+
+			const geometry = new THREE.BoxGeometry(1, 1, 1, 5, 5, 5);
+			transformation2(geometry);
+			const mesh = new THREE.Mesh(geometry, material);
+			const edgesGeometry = new THREE.EdgesGeometry(geometry);
+			const lines = new THREE.Mesh(geometry, lineMaterial);
+			const edges = new THREE.LineSegments(edgesGeometry, edgeMaterial);
+			scene.add(mesh);
+			scene.add(lines);
+			scene.add(edges);
+
+			render();
+			zoomExtents();
+
+			let animationFrameID = requestAnimationFrame(update);
+
+			function transformatio0(geo) {
+				const Z = [];
+				for (let i = 0; i < geo.attributes.position.count; i++) {
+					const x = geo.attributes.position.getX(i);
+					const y = geo.attributes.position.getY(i);
+					const z = geo.attributes.position.getZ(i);
+					Z.push([x * 2, y * 2, z * 2]);
+
+					geo.attributes.position.setX(i);
+					geo.attributes.position.setY(i, y * 2);
+					geo.attributes.position.setZ(i, z * 2);
+				}
+				return Z;
+			}
+
+			function transformation1(geo) {
+				for (let i = 0; i < geo.attributes.position.count; i++) {
+					const x = geo.attributes.position.getX(i) + 0.5;
+					const y = geo.attributes.position.getY(i) + 0.5;
+					const z = geo.attributes.position.getZ(i) + 0.5;
+
+					geo.attributes.position.setX(i, x * (1 - y));
+					geo.attributes.position.setY(i, y);
+					geo.attributes.position.setZ(i, z);
+				}
+			}
+
+			function transformation2(geo) {
+				for (let i = 0; i < geo.attributes.position.count; i++) {
+					const x = geo.attributes.position.getX(i) + 0.5;
+					const y = geo.attributes.position.getY(i) + 0.5;
+					const z = geo.attributes.position.getZ(i) + 0.5;
+
+					geo.attributes.position.setX(i, x * (1 - y) * (1 - z));
+					geo.attributes.position.setY(i, y * (1 - z));
+					geo.attributes.position.setZ(i, z);
+				}
+			}
+
+			function resizeRendererToDisplaySize() {
+				const canvas = renderer.domElement;
+				const pixelRatio = window.devicePixelRatio;
+				const width = (canvas.clientWidth * pixelRatio) | 0;
+				const height = (canvas.clientHeight * pixelRatio) | 0;
+				const needResize =
+					canvas.width !== width || canvas.height !== height;
+				if (needResize) {
+					renderer.setSize(width, height, false);
+				}
+				return needResize;
+			}
+			function render() {
+				if (resizeRendererToDisplaySize()) {
+					const canvas = renderer.domElement;
+					const aspect = canvas.clientWidth / canvas.clientHeight;
+					camera.aspect = aspect;
+					camera.updateProjectionMatrix();
+				}
+				renderer.render(scene, camera);
+			}
+			function update() {
+				render();
+				animationFrameID = requestAnimationFrame(update);
+			}
+			function zoomExtents() {
+				let vFoV = camera.getEffectiveFOV();
+				let hFoV = camera.fov * camera.aspect;
+
+				let FoV = Math.min(vFoV, hFoV);
+				let FoV2 = FoV / 2;
+
+				let dir = new THREE.Vector3();
+				camera.getWorldDirection(dir);
+
+				let bb = mesh.geometry.boundingBox;
+				let bs = mesh.geometry.boundingSphere;
+				let bsWorld = bs.center.clone();
+				mesh.localToWorld(bsWorld);
+
+				let th = (FoV2 * Math.PI) / 180.0;
+				let sina = Math.sin(th);
+				let R = bs.radius;
+				let FL = R / sina;
+
+				let cameraDir = new THREE.Vector3();
+				camera.getWorldDirection(cameraDir);
+
+				let cameraOffs = cameraDir.clone();
+				cameraOffs.multiplyScalar(-FL);
+				let newCameraPos = bsWorld.clone().add(cameraOffs);
+
+				camera.position.copy(newCameraPos);
+				camera.lookAt(bsWorld);
+				controls.target.copy(bsWorld);
+
+				controls.update();
+			}
+		</script>
+	</body>
+</html>
