@@ -1,11 +1,65 @@
+/*LILGUI*/
+
+:root {
+	--gui-background-color: #f6f6f6;
+	--gui-text-color: #3d3d3d;
+	--gui-title-background-color: #efefef;
+	--gui-title-text-color: #3d3d3d;
+	--gui-widget-color: #eaeaea;
+	--gui-hover-color: #f0f0f0;
+	--gui-focus-color: #fafafa;
+	--gui-number-color: #07aacf;
+	--gui-string-color: #8da300;
+
+	--backbround-color: var(--gui-background-color);
+	--over-backbround-color: var(--gui-background-color);
+	--focus-color: #dc2c41;
+	--lines-color: var(--gui-text-color);
+	--font-family: "Roboto", sans-serif;
+	--plot-grid-color: var(--gui-title-background-color);
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--gui-background-color: #1f1f1f;
+		--gui-text-color: #ebebeb;
+		--gui-title-background-color: #111111;
+		--gui-title-text-color: #ebebeb;
+		--gui-widget-color: #424242;
+		--gui-hover-color: #4f4f4f;
+		--gui-focus-color: #595959;
+		--gui-number-color: #2cc9ff;
+		--gui-string-color: #a2db3c;
+
+		--focus-color: var(--gui-focus-color);
+		--backbround-color: var(--gui-background-color);
+		--over-backbround-color: var(--gui-background-color);
+		--plot-grid-color: #616161;
+	}
+}
+
+.lil-gui {
+	--background-color: var(--gui-background-color);
+	--text-color: var(--gui-text-color);
+	--title-background-color: var(--gui-title-background-color);
+	--title-text-color: var(--title-gui-text-color);
+	--widget-color: var(--gui-widget-color);
+	--hover-color: var(--gui-hover-color);
+	--focus-color: var(--gui-focus-color);
+	--number-color: var(--gui-number-color);
+	--string-color: var(--gui-string-color);
+	--widget-padding: var(--gui-widget-padding);
+}
+
 html,
 body {
 	margin: 0px;
 	height: 100%;
 
-	font-family: "Roboto", sans-serif;
-	background-color: transparent;
+	font-family: var(--font-family);
+	background-color: var(--backbround-color);
+	color: var(--gui-text-color);
 }
+
 .noselect {
 	-webkit-touch-callout: none; /* iOS Safari */
 	-webkit-user-select: none; /* Safari */
@@ -26,14 +80,14 @@ body {
 
 .mini-box {
 	position: absolute;
-	background-color: white;
+	background-color: var(--over-backbround-color);
 	top: 20px;
 	left: 20px;
 	height: 320px;
 	width: 320px;
 	resize: both;
 	overflow: hidden;
-	border: solid 2px #f6f6f6;
+	border: solid 2px var(--gui-title-background-color);
 	border-radius: 6px;
 }
 
@@ -65,10 +119,10 @@ body {
 
 /* Modal Content/Box */
 .modal-content {
-	background-color: #fefefe;
+	background-color: var(--gui-background-color);
 	margin: 15% auto; /* 15% from the top and centered */
 	padding: 20px;
-	border: 1px solid #888;
+	border: 1px solid var(--gui-title-background-color);
 	border-radius: 10px;
 	width: 80%; /* Could be more or less, depending on screen size */
 }
@@ -78,6 +132,10 @@ body {
 	color: #aaa;
 	float: right;
 	font-size: 28px;
+	font-weight: bold;
+}
+.closeButton {
+	font-size: 20px;
 	font-weight: bold;
 }
 
@@ -96,9 +154,9 @@ body {
 	width: 120px;
 	height: 120px;
 	margin: -76px 0 0 -76px;
-	border: 16px solid #f3f3f3;
+	border: 16px solid var(--gui-widget-color);
 	border-radius: 50%;
-	border-top: 16px solid #dc2c41;
+	border-top: 16px solid var(--focus-color);
 	-webkit-animation: spin 2s linear infinite;
 	animation: spin 2s linear infinite;
 }
@@ -156,4 +214,107 @@ body {
 }
 .resizable {
 	touch-action: none;
+}
+
+/*NOTIFICATION BAR*/
+
+.notification-bottom {
+	text-align: right;
+	font-size: 11px;
+	margin-right: 10px;
+	margin-left: 10px;
+	min-width: 100px;
+}
+
+.fa {
+	color: var(--text-color);
+}
+
+.notification-container {
+	position: fixed;
+	bottom: -5px;
+	right: -5px;
+	border-radius: 10px;
+	background-color: var(--gui-background-color);
+}
+.notification-container-ev {
+	position: absolute;
+	bottom: -5px;
+	background-color: var(--gui-title-background-color);
+	width: 100%;
+}
+
+.header-element-viewer {
+	position: absolute;
+	font-size: 14px;
+	top: 0px;
+	left: 0px;
+	width: 100%;
+	padding-left: 5px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	background-color: var(--gui-title-background-color);
+}
+
+progress {
+	accent-color: var(--focus-color);
+}
+.notification-button {
+	float: left;
+	margin-right: 5px;
+	padding-right: 5px;
+	border-right: solid 1px var(--gui-widget-color);
+}
+.notification-button-ev {
+	float: left;
+	margin-right: 5px;
+	padding-right: 5px;
+}
+.notification-bottom-ev {
+	text-align: left;
+	font-size: 11px;
+	margin-right: 10px;
+	margin-left: 10px;
+	width: 100%;
+}
+.notification-action {
+	border: none;
+	background-color: transparent;
+}
+.notification-action:hover {
+	background-color: #d4d4d4;
+}
+/* The slider itself */
+.slider {
+	-webkit-appearance: none; /* Override default CSS styles */
+	appearance: none;
+	width: 100%; /* Full-width */
+	height: 15px; /* Specified height */
+	background: var(--gui-widget-color); /* Grey background */
+	outline: none; /* Remove outline */
+	opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+	-webkit-transition: 0.2s; /* 0.2 seconds transition on hover */
+	transition: opacity 0.2s;
+}
+
+/* Mouse-over effects */
+.slider:hover {
+	opacity: 1; /* Fully shown on mouse-over */
+}
+
+/* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+.slider::-webkit-slider-thumb {
+	-webkit-appearance: none; /* Override default look */
+	appearance: none;
+	width: 25px; /* Set a specific slider handle width */
+	height: 15px; /* Slider handle height */
+	background: var(--focus-color); /* Green background */
+	cursor: pointer; /* Cursor on hover */
+}
+
+.slider::-moz-range-thumb {
+	width: 25px; /* Set a specific slider handle width */
+	height: 15px; /* Slider handle height */
+	background: var(--focus-color); /* Green background */
+	cursor: pointer; /* Cursor on hover */
 }

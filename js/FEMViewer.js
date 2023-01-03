@@ -21,6 +21,37 @@ import {
 	LinealO2,
 } from "./Elements.js";
 
+const style = getComputedStyle(document.body);
+const TEXT_COLOR = style.getPropertyValue("--gui-text-color").trim();
+const BACKGROUND_COLOR = style
+	.getPropertyValue("--gui-background-color")
+	.trim();
+const TITLE_BACKGROUND_COLOR = style
+	.getPropertyValue("--gui-title-background-color")
+	.trim();
+
+const PLOT_GRID_COLOR = style.getPropertyValue("--plot-grid-color").trim();
+
+const FONT_FAMILY = style.getPropertyValue("--font-family").trim();
+const PLOT_STYLE = {
+	margin: { t: 0 },
+	paper_bgcolor: BACKGROUND_COLOR,
+	plot_bgcolor: BACKGROUND_COLOR,
+	font: {
+		color: TEXT_COLOR,
+		family: FONT_FAMILY,
+	},
+	xaxis: {
+		gridcolor: PLOT_GRID_COLOR,
+	},
+	yaxis: {
+		gridcolor: PLOT_GRID_COLOR,
+	},
+};
+
+const FOCUS_COLOR = style.getPropertyValue("--focus-color").trim();
+const LINES_COLOR = style.getPropertyValue("--lines-color").trim();
+
 const types = {
 	B1V: Brick,
 	B2V: BrickO2,
@@ -193,9 +224,7 @@ class FEMViewer {
 			};
 			data.push(trace);
 		}
-		Plotly.newPlot(this.histogram, data, {
-			margin: { t: 0 },
-		});
+		Plotly.newPlot(this.histogram, data, PLOT_STYLE);
 	}
 	createHistogram2() {
 		let data = [];
@@ -205,11 +234,12 @@ class FEMViewer {
 			}),
 			type: "histogram",
 			name: "Scaled Jacobian",
+			marker: {
+				color: FOCUS_COLOR,
+			},
 		};
 		data.push(trace);
-		Plotly.newPlot(this.histogram, data, {
-			margin: { t: 0 },
-		});
+		Plotly.newPlot(this.histogram, data, PLOT_STYLE);
 	}
 
 	testNeighborg(ide1, ide2) {
@@ -355,6 +385,7 @@ class FEMViewer {
 		this.mergedLineGeometry.dispose();
 		this.renderer.renderLists.dispose();
 		this.material.dispose();
+		this.line_material.dispose();
 
 		this.destroy_element_views();
 		this.resource_tracker.dispose();
@@ -653,13 +684,14 @@ class FEMViewer {
 		if (this.colors) {
 			this.material = new THREE.MeshBasicMaterial({
 				vertexColors: true,
+				wireframe: this.wireframe,
 			});
 			this.light2.intensity = 1.0;
 			this.light.intensity = 0.0;
 		} else {
 			this.material = new THREE.MeshLambertMaterial({
-				color: "#dc2c41",
-				emissive: "#dc2c41",
+				color: FOCUS_COLOR,
+				emissive: FOCUS_COLOR,
 				wireframe: this.wireframe,
 			});
 			this.light2.intensity = 0.0;
@@ -894,8 +926,8 @@ class FEMViewer {
 		DIV.innerHTML = "Creating materials..." + "⌛";
 		await allowUpdate();
 		this.updateMaterial();
-		const line_material = new THREE.LineBasicMaterial({
-			color: "black",
+		this.line_material = new THREE.LineBasicMaterial({
+			color: LINES_COLOR,
 			linewidth: 3,
 		});
 		this.mergedLineGeometry = BufferGeometryUtils.mergeBufferGeometries(
@@ -904,7 +936,7 @@ class FEMViewer {
 		);
 		this.contour = new THREE.LineSegments(
 			this.mergedLineGeometry,
-			line_material
+			this.line_material
 		);
 		// this.model.add(this.contour);
 

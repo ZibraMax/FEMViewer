@@ -63,18 +63,11 @@ class ElementView {
 
 		const geometry = this.element.geometry;
 
-		this.material = new THREE.MeshBasicMaterial({
-			vertexColors: true,
-		});
-		this.line_material = new THREE.LineBasicMaterial({
-			color: "black",
-			linewidth: 3,
-		});
 		this.contour = new THREE.LineSegments(
 			this.element.line_geometry,
-			this.line_material
+			this.parent.line_material
 		);
-		this.mesh = new THREE.Mesh(geometry, this.material);
+		this.mesh = new THREE.Mesh(geometry, this.parent.material);
 		this.scene.add(this.mesh);
 		this.scene.add(this.contour);
 		this.render();
@@ -94,6 +87,7 @@ class ElementView {
 			);
 		}
 		this.contour.geometry = this.element.line_geometry;
+		this.contour.material = this.parent.line_material;
 		this.mesh.geometry = this.element.geometry;
 		this.mesh.material = this.parent.material;
 		this.mesh.material.needsUpdate = true;
@@ -109,8 +103,6 @@ class ElementView {
 		this.mesh.material.dispose();
 		this.contour.geometry.dispose();
 		this.contour.material.dispose();
-		this.material.dispose();
-		this.line_material.dispose();
 		this.scene.clear();
 		this.renderer.dispose();
 		this.res = this.parent.resolution;
@@ -143,14 +135,14 @@ class ElementView {
 		header.innerHTML =
 			"<i class='fa-regular fa-solid fa-up-down-left-right'></i> Element " +
 			this.element.index +
-			"| Resolution=" +
+			" | Resolution=" +
 			this.res;
 		this.closeButton = document.createElement("i");
 		//canvas.setAttribute("id", "element-view-" + this.element.index);
-		this.closeButton.setAttribute("class", "fa-solid fa-xmark");
+		this.closeButton.setAttribute("class", "closeButton fa-solid fa-xmark");
 		this.closeButton.setAttribute(
 			"style",
-			"position:absolute;top: 5px;right: 10px;z-index:100"
+			"position:absolute;top: 4px;right: 8px;z-index:100"
 		);
 		this.closeButton.addEventListener("click", () => {
 			this.parent.destroy_element_view(this);
@@ -169,7 +161,7 @@ class ElementView {
 			header.innerHTML =
 				"<i class='fa-regular fa-solid fa-up-down-left-right'></i> Element " +
 				this.element.index +
-				"| Resolution=" +
+				" | Resolution=" +
 				this.res;
 			root.appendChild(this.closeButton);
 			this.restartElement();
