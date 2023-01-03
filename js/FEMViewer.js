@@ -387,7 +387,7 @@ class FEMViewer {
 		this.scene = new THREE.Scene();
 		// Camera settings
 		const fov = 40;
-		const aspect = 2; // the canvas default
+		const aspect = window.innerWidth / window.innerHeight; // the canvas default
 		const near = 0.01;
 		const far = 200;
 		this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
@@ -778,6 +778,7 @@ class FEMViewer {
 			const aspect = canvas.clientWidth / canvas.clientHeight;
 			this.camera.aspect = aspect;
 			this.camera.updateProjectionMatrix();
+			this.zoomExtents();
 		}
 		this.renderer.render(this.scene, this.camera);
 		if (this.colors) {
