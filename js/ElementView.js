@@ -137,6 +137,7 @@ class ElementView {
 				color.b
 			);
 		}
+		this.contour.geometry = this.element.line_geometry;
 		this.mesh.geometry = this.element.geometry;
 		this.mesh.material = this.parent.material;
 		this.mesh.material.needsUpdate = true;
