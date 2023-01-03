@@ -681,8 +681,6 @@ class FEMViewer {
 		return needResize;
 	}
 	updateMeshCoords() {
-		console.error("Mesh coords");
-
 		for (let i = 0; i < this.elements.length; i++) {
 			const e = this.elements[i];
 			if (this.draw_lines) {
@@ -694,6 +692,12 @@ class FEMViewer {
 		if (this.colors) {
 			this.updateColorValues();
 		}
+	}
+
+	updateSpecificBufferGeometry(i) {
+		//TODO Buffer geometry no loger needed?
+		this.bufferGeometries[i] = this.elements[i].geometry;
+		this.bufferLines[i] = this.elements[i].line_geometry;
 	}
 
 	updateColorValues() {
@@ -794,6 +798,7 @@ class FEMViewer {
 	destroy_element_view(ev) {
 		ev.close();
 		this.element_views.delete(ev);
+		this.updateLut();
 	}
 
 	addExamples(file_paths, b, a) {
@@ -1217,7 +1222,6 @@ class FEMViewer {
 	}
 
 	updateU() {
-		console.log("llamado a updateu");
 		this.U = this.solutions[this.step].flat();
 
 		this.updateDispSlider();
@@ -1304,10 +1308,6 @@ class FEMViewer {
 			}
 			this.elements[i].index = i;
 
-			this.elements[i].geometry.setAttribute(
-				"color",
-				new THREE.Float32BufferAttribute(colors, 3)
-			);
 			this.bufferGeometries.push(this.elements[i].geometry);
 			const messh = new THREE.Mesh(
 				this.elements[i].geometry,

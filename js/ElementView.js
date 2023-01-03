@@ -48,11 +48,28 @@ function dragElement(elmnt) {
 
 class ElementView {
 	static parent = document.getElementById("models-container");
-	constructor(element, parent) {
+	constructor(element, parent, res) {
 		this.element = element;
 		this.parent = parent;
+		this.res = res || 5;
+		this.restartElement();
 		this.createView();
 		this.init();
+	}
+	restartElement() {
+		this.element.res = this.res;
+		this.element.initGeometry();
+		this.element.setUe(
+			this.parent.U,
+			this.parent.config_dict["calculateStrain"],
+			this.parent.config_dict["displacements"]
+		);
+		this.element.setGeometryCoords(this.parent.mult, this.parent.norm);
+		this.element.setMaxDispNode(
+			this.parent.colorOptions,
+			this.parent.config_dict["calculateStrain"]
+		);
+		this.parent.updateSpecificBufferGeometry(this.element.index);
 	}
 
 	init() {
@@ -135,6 +152,8 @@ class ElementView {
 		this.line_material.dispose();
 		this.scene.clear();
 		this.renderer.dispose();
+		this.res = 1;
+		this.restartElement();
 	}
 	close() {
 		this.dispose();

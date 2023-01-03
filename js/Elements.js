@@ -97,7 +97,6 @@ class Element {
 			this.Ue.push(u);
 		}
 		this.updateCoordinates(this.Ue, displacements);
-
 		this.giveSecondVariableSolution(svs);
 	}
 
@@ -545,6 +544,13 @@ class Brick extends Element3D {
 		this._domain = this.domain;
 		this.modifier_lineas = new Array(this.modifier.length).fill(0);
 		this.colors = Array(this.modifier.length).fill(0.0);
+		this.geometry.setAttribute(
+			"color",
+			new THREE.Float32BufferAttribute(
+				new Array(this.modifier.length * 3),
+				3
+			)
+		);
 	}
 }
 
@@ -621,6 +627,13 @@ class Tetrahedral extends Element3D {
 		this._domain = this.domain;
 		this.modifier_lineas = new Array(this.modifier.length).fill(0);
 		this.colors = Array(this.modifier.length).fill(0.0);
+		this.geometry.setAttribute(
+			"color",
+			new THREE.Float32BufferAttribute(
+				new Array(this.modifier.length * 3),
+				3
+			)
+		);
 	}
 }
 
@@ -684,6 +697,13 @@ class Lineal extends Element3D {
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		this.colors = Array(this.modifier.length).fill(0.0);
+		this.geometry.setAttribute(
+			"color",
+			new THREE.Float32BufferAttribute(
+				new Array(this.modifier.length * 3),
+				3
+			)
+		);
 	}
 }
 
@@ -759,6 +779,13 @@ class Triangular extends Element3D {
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		this.colors = Array(this.modifier.length).fill(0.0);
+		this.geometry.setAttribute(
+			"color",
+			new THREE.Float32BufferAttribute(
+				new Array(this.modifier.length * 3),
+				3
+			)
+		);
 	}
 }
 
@@ -839,6 +866,13 @@ class Quadrilateral extends Element3D {
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		this.colors = Array(this.modifier.length).fill(0.0);
+		this.geometry.setAttribute(
+			"color",
+			new THREE.Float32BufferAttribute(
+				new Array(this.modifier.length * 3),
+				3
+			)
+		);
 	}
 }
 
