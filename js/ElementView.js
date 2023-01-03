@@ -160,7 +160,7 @@ class ElementView {
 		let slider = document.createElement("input");
 		slider.setAttribute("type", "range");
 		slider.setAttribute("min", "1");
-		slider.setAttribute("max", "7");
+		slider.setAttribute("max", "6");
 		slider.setAttribute("step", "1");
 		slider.setAttribute("value", this.res);
 		slider.setAttribute("class", "slider");
