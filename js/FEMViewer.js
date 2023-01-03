@@ -84,6 +84,7 @@ class FEMViewer {
 		this.before_load = () => {};
 		this.after_load = () => {};
 		this.rot = rot;
+		this.resolution = 1;
 		this.nodes = [];
 		this.nvn = -1;
 		this.dictionary = [];
@@ -137,6 +138,14 @@ class FEMViewer {
 		this.colorOptions = "nocolor";
 		this.settings();
 		this.clickMode = "Inspect element";
+	}
+	updateResolution() {
+		for (const e of this.elements) {
+			e.res = this.resolution;
+			e.initGeometry();
+			this.updateSpecificBufferGeometry(e.index);
+		}
+		this.updateSolution();
 	}
 	updateRefresh() {
 		const playButton = document.getElementById("play-button");
@@ -459,6 +468,11 @@ class FEMViewer {
 			.add(this, "clickMode", ["Inspect element", "Delete element"])
 			.listen()
 			.name("Click mode");
+		this.gui
+			.add(this, "resolution", 1, 7, 1)
+			.listen()
+			.onChange(this.updateResolution.bind(this))
+			.name("Resolution");
 	}
 	toogleSolutionAsDisp() {
 		this.config_dict["displacements"] = this.solution_as_displacement;
@@ -787,7 +801,7 @@ class FEMViewer {
 	}
 
 	createElementView(e) {
-		let element_view = new ElementView(e, this);
+		let element_view = new ElementView(e, this, this.resolution);
 		this.element_views.add(element_view);
 		//this.show_element_views();
 	}

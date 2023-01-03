@@ -156,7 +156,7 @@ class ElementView {
 		this.line_material.dispose();
 		this.scene.clear();
 		this.renderer.dispose();
-		this.res = 1;
+		this.res = this.parent.resolution;
 		this.restartElement();
 	}
 	close() {
