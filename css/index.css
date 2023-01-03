@@ -27,8 +27,8 @@ body {
 .mini-box {
 	position: absolute;
 	background-color: white;
-	top: 0;
-	left: 0;
+	top: 20px;
+	left: 20px;
 	height: 320px;
 	width: 320px;
 	resize: both;
