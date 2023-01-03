@@ -6,7 +6,7 @@ import { OrbitControls } from "./build/OrbitControls.js";
 import * as BufferGeometryUtils from "./build/BufferGeometryUtils.js";
 import { AxisGridHelper } from "./build/minigui.js";
 import { Lut } from "./build/Lut.js";
-import { CONFIG_DICT } from "./build/ConfigDicts.js";
+import { CONFIG_DICT } from "./ConfigDicts.js";
 import { Geometree, Quadrant3D } from "./build/Octree.js";
 import {
 	Brick,
@@ -19,7 +19,7 @@ import {
 	Quadrilateral,
 	Serendipity,
 	LinealO2,
-} from "./build/Elements.js";
+} from "./Elements.js";
 
 const types = {
 	B1V: Brick,
