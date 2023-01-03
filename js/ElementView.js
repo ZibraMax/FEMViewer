@@ -59,16 +59,27 @@ class ElementView {
 	restartElement() {
 		this.element.res = this.res;
 		this.element.initGeometry();
-		this.element.setUe(
-			this.parent.U,
-			this.parent.config_dict["calculateStrain"],
+		this.element.updateCoordinates(
+			this.element.Ue,
 			this.parent.config_dict["displacements"]
 		);
-		this.element.setGeometryCoords(this.parent.mult, this.parent.norm);
+		if (this.parent.solution_as_displacement) {
+			this.element.variableAsDisplacement(
+				this.parent.variable_as_displacement
+			);
+		}
+		this.element.giveSecondVariableSolution(
+			this.parent.config_dict["calculateStrain"]
+		);
+		this.element.setGeometryCoords(
+			this.parent.magnif * this.parent.mult,
+			this.parent.norm
+		);
 		this.element.setMaxDispNode(
 			this.parent.colorOptions,
 			this.parent.config_dict["calculateStrain"]
 		);
+
 		this.parent.updateSpecificBufferGeometry(this.element.index);
 	}
 

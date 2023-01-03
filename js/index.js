@@ -167,3 +167,6 @@ resetButton.addEventListener("click", () => {
 
 // Make the DIV element draggable:
 //dragElement(document.getElementById("element-view-container"));
+window.addEventListener("resize", (event) => {
+	O.render();
+});

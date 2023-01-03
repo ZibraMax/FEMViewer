@@ -329,14 +329,14 @@ class FEMViewer {
 		DIV.innerHTML = "Ready!";
 	}
 	reset() {
-		this.corriendo = false;
+		this.solution_as_displacement = false;
+		this.variable_as_displacement = 2;
+		this.toogleSolutionAsDisp();
 		const track = this.resource_tracker.track.bind(this.resource_tracker);
 
 		track(this.model);
 		track(this.invisibleModel);
 
-		this.animate = false;
-		this.colorOptions = "nocolor";
 		for (let i = 0; i < this.elements.length; i++) {
 			this.elements[i].geometry.dispose();
 			this.bufferGeometries.pop().dispose();
@@ -348,22 +348,26 @@ class FEMViewer {
 		this.material.dispose();
 
 		this.destroy_element_views();
-		this.element_views = new Set();
-
 		this.resource_tracker.dispose();
 
+		this.element_views = new Set();
+		this.wireframe = false;
+		this.corriendo = false;
+		this.animationFrameID = undefined;
+		this.animate = false;
+		this.colorOptions = "nocolor";
 		this.config_dict = CONFIG_DICT["GENERAL"];
-		this.solution_as_displacement = false;
+		this.min_search_radius = -Infinity;
+		this.not_draw_elements = []; // quitar
 		this.bufferGeometries = [];
 		this.bufferLines = [];
-		this.variable_as_displacement = 2;
 
 		this.nodes = [];
 		this.dictionary = [];
 		this.solutions = [];
 		this.solutions_info = [];
+		this.U = [];
 		this.step = 0;
-		this.U = undefined;
 		this.elements = [];
 		this.types = [];
 		this.magnif = 0.0;
@@ -520,6 +524,7 @@ class FEMViewer {
 				.onChange(() => {
 					this.updateMeshCoords();
 					this.updateGeometry();
+					console.log(this.magnif);
 				});
 		}
 	}
@@ -695,9 +700,9 @@ class FEMViewer {
 	}
 
 	updateSpecificBufferGeometry(i) {
-		//TODO Buffer geometry no loger needed?
 		this.bufferGeometries[i] = this.elements[i].geometry;
 		this.bufferLines[i] = this.elements[i].line_geometry;
+		this.invisibleModel.children[i].geometry = this.elements[i].geometry;
 	}
 
 	updateColorValues() {
@@ -792,13 +797,15 @@ class FEMViewer {
 	}
 	destroy_element_views() {
 		for (const ev of this.element_views) {
-			this.destroy_element_view(ev);
+			this.destroy_element_view(ev, true);
 		}
 	}
-	destroy_element_view(ev) {
+	destroy_element_view(ev, noclose) {
 		ev.close();
 		this.element_views.delete(ev);
-		this.updateLut();
+		if (!noclose) {
+			this.updateLut();
+		}
 	}
 
 	addExamples(file_paths, b, a) {
@@ -895,8 +902,8 @@ class FEMViewer {
 		this.scene.add(this.model);
 		this.scene.add(this.invisibleModel);
 		this.scene.add(this.model);
-		this.renderer.render(this.scene, this.camera);
-		this.zoomExtents();
+		//this.renderer.render(this.scene, this.camera);
+		//this.zoomExtents();
 		this.updateLines();
 		window.addEventListener("resize", this.render.bind(this));
 		if (!this.corriendo) {
@@ -1232,6 +1239,9 @@ class FEMViewer {
 				this.config_dict["calculateStrain"],
 				this.config_dict["displacements"]
 			);
+			if (this.solution_as_displacement) {
+				e.variableAsDisplacement(this.variable_as_displacement);
+			}
 		}
 		this.updateMeshCoords();
 		this.updateColorVariable();
