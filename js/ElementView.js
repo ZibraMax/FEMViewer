@@ -51,7 +51,7 @@ class ElementView {
 	constructor(element, parent, res) {
 		this.element = element;
 		this.parent = parent;
-		this.res = res || 5;
+		this.res = res || 3;
 		this.restartElement();
 		this.createView();
 		this.init();
@@ -92,7 +92,7 @@ class ElementView {
 		});
 
 		const fov = 40;
-		const aspect = 2; // the canvas default
+		const aspect = this.canvas.clientWidth / this.canvas.clientHeight; // the canvas default
 		const near = 0.01;
 		const far = 200;
 
@@ -138,14 +138,7 @@ class ElementView {
 			);
 		}
 		this.mesh.geometry = this.element.geometry;
-		this.mesh.material = this.material;
-		if (this.parent.colorOptions == "nocolor") {
-			const material = new THREE.MeshLambertMaterial({
-				color: "#dc2c41",
-				emissive: "#dc2c41",
-			});
-			this.mesh.material = material;
-		}
+		this.mesh.material = this.parent.material;
 		this.mesh.material.needsUpdate = true;
 		this.scene.children[0].geometry.attributes.color.needsUpdate = true;
 		let msg = `X = -, Y = -, Z = -, Value = -`;
@@ -189,15 +182,43 @@ class ElementView {
 		header.setAttribute("class", "header-element-viewer noselect");
 		header.innerHTML =
 			"<i class='fa-regular fa-solid fa-up-down-left-right'></i> Element " +
-			this.element.index;
-		let closeButton = document.createElement("i");
+			this.element.index +
+			"| Resolution=" +
+			this.res;
+		this.closeButton = document.createElement("i");
 		//canvas.setAttribute("id", "element-view-" + this.element.index);
-		closeButton.setAttribute("class", "fa-solid fa-xmark");
-		closeButton.setAttribute("style", "position:absolute;right: 10px;");
-		closeButton.addEventListener("click", () => {
+		this.closeButton.setAttribute("class", "fa-solid fa-xmark");
+		this.closeButton.setAttribute(
+			"style",
+			"position:absolute;right: 10px;"
+		);
+		this.closeButton.addEventListener("click", () => {
 			this.parent.destroy_element_view(this);
 		});
-		header.appendChild(closeButton);
+		header.appendChild(this.closeButton);
+
+		let slider = document.createElement("input");
+		slider.setAttribute("type", "range");
+		slider.setAttribute("min", "1");
+		slider.setAttribute("max", "7");
+		slider.setAttribute("step", "1");
+		slider.setAttribute("value", this.res);
+		slider.setAttribute("class", "slider");
+		slider.addEventListener("input", () => {
+			this.res = slider.value;
+			header.innerHTML =
+				"<i class='fa-regular fa-solid fa-up-down-left-right'></i> Element " +
+				this.element.index +
+				"| Resolution=" +
+				this.res;
+			header.appendChild(this.closeButton);
+			this.restartElement();
+			this.updateGeometry();
+			this.render();
+			this.parent.updateSpecificBufferGeometry(this.element.index);
+			this.parent.updateColorValues();
+			this.parent.updateGeometry();
+		});
 
 		let footer = document.createElement("div");
 		footer.setAttribute("class", "notification-container-ev noselect");
@@ -209,6 +230,7 @@ class ElementView {
 		this.infoText.innerHTML = "X = -, Y = -, Z = -, Value = -";
 		footer2.appendChild(this.infoText);
 		footer.appendChild(footer2);
+		footer.appendChild(slider);
 
 		root.appendChild(header);
 		root.appendChild(this.canvas);
