@@ -409,18 +409,7 @@ class Brick extends Element3D {
 		this.nfaces = 6;
 		this.coords_o = coords;
 		this.ndim = 3;
-		this.geometry = new THREE.BoxGeometry(
-			1,
-			1,
-			1,
-			this.res,
-			this.res,
-			this.res
-		);
-		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
-		this.domain = this.transformation(this.geometry);
-		this._domain = this.domain;
-		this.modifier_lineas = new Array(this.modifier.length).fill(0);
+		this.initGeometry();
 		this.Z = [
 			[-0.77459667, -0.77459667, -0.77459667],
 			[-0.77459667, -0.77459667, 0],
@@ -458,7 +447,6 @@ class Brick extends Element3D {
 			0.17146776, 0.27434842, 0.43895748, 0.27434842, 0.17146776,
 			0.27434842, 0.17146776,
 		];
-		this.colors = Array(this.modifier.length).fill(0.0);
 	}
 	psi(_z) {
 		const z = _z[0];
@@ -543,6 +531,21 @@ class Brick extends Element3D {
 		}
 		return Z;
 	}
+	initGeometry() {
+		this.geometry = new THREE.BoxGeometry(
+			1,
+			1,
+			1,
+			this.res,
+			this.res,
+			this.res
+		);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
+		this.domain = this.transformation(this.geometry);
+		this._domain = this.domain;
+		this.modifier_lineas = new Array(this.modifier.length).fill(0);
+		this.colors = Array(this.modifier.length).fill(0.0);
+	}
 }
 
 class Tetrahedral extends Element3D {
@@ -555,11 +558,7 @@ class Tetrahedral extends Element3D {
 		this.ndim = 3;
 		this.nfaces = 4;
 		this.coords_o = coords;
-		this.geometry = newTet(this.res);
-		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
-		this.domain = this.transformation(this.geometry);
-		this._domain = this.domain;
-		this.modifier_lineas = new Array(this.modifier.length).fill(0);
+		this.initGeometry();
 		this.Z = [
 			[0.01583591, 0.3280547, 0.3280547],
 			[0.3280547, 0.01583591, 0.3280547],
@@ -574,7 +573,6 @@ class Tetrahedral extends Element3D {
 			0.023088, 0.023088, 0.023088, 0.023088, 0.01857867, 0.01857867,
 			0.01857867, 0.01857867,
 		];
-		this.colors = Array(this.modifier.length).fill(0.0);
 	}
 	psi(_z) {
 		let x = _z[0];
@@ -616,6 +614,14 @@ class Tetrahedral extends Element3D {
 		}
 		return Z;
 	}
+	initGeometry() {
+		this.geometry = newTet(this.res);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
+		this.domain = this.transformation(this.geometry);
+		this._domain = this.domain;
+		this.modifier_lineas = new Array(this.modifier.length).fill(0);
+		this.colors = Array(this.modifier.length).fill(0.0);
+	}
 }
 
 class Lineal extends Element3D {
@@ -632,11 +638,7 @@ class Lineal extends Element3D {
 			c.push([x]);
 		}
 		this.coords_o = c;
-		this.geometry = new THREE.BoxGeometry(1, 1, 1, this.res, 1, 1);
-		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
-		this.domain = this.transformation(this.geometry);
-		this.colors = Array(this.modifier.length).fill(0.0);
-
+		this.initGeometry();
 		this.Z = [[-0.77459667], [0], [0.77459667]];
 		this.W = [0.55555556, 0.88888889, 0.55555556];
 	}
@@ -677,6 +679,12 @@ class Lineal extends Element3D {
 		}
 		return Z;
 	}
+	initGeometry() {
+		this.geometry = new THREE.BoxGeometry(1, 1, 1, this.res, 1, 1);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
+		this.domain = this.transformation(this.geometry);
+		this.colors = Array(this.modifier.length).fill(0.0);
+	}
 }
 
 class Triangular extends Element3D {
@@ -695,9 +703,7 @@ class Triangular extends Element3D {
 			c.push([x, y]);
 		}
 		this.coords_o = c;
-		this.geometry = newPrism(this.res);
-		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
-		this.domain = this.transformation(this.geometry);
+		this.initGeometry();
 		const A0 = 1 / 3;
 		const A1 = 0.05971587178977;
 		const A2 = 0.797426985353087;
@@ -713,7 +719,6 @@ class Triangular extends Element3D {
 			this.Z.push([X[i], Y[i]]);
 		}
 		this.W = [W0, W1, W1, W1, W2, W2, W2];
-		this.colors = Array(this.modifier.length).fill(0.0);
 	}
 	psi(_z) {
 		return [1.0 - _z[0] - _z[1], _z[0], _z[1]];
@@ -749,6 +754,12 @@ class Triangular extends Element3D {
 		}
 		return Z;
 	}
+	initGeometry() {
+		this.geometry = newPrism(this.res);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
+		this.domain = this.transformation(this.geometry);
+		this.colors = Array(this.modifier.length).fill(0.0);
+	}
 }
 
 class Quadrilateral extends Element3D {
@@ -767,10 +778,7 @@ class Quadrilateral extends Element3D {
 			c.push([x, y]);
 		}
 		this.coords_o = c;
-		this.geometry = new THREE.BoxGeometry(1, 1, 1, this.res, this.res, 1);
-		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
-
-		this.domain = this.transformation(this.geometry);
+		this.initGeometry();
 		this.Z = [
 			[-0.77459667, -0.77459667],
 			[-0.77459667, 0],
@@ -786,7 +794,6 @@ class Quadrilateral extends Element3D {
 			0.30864198, 0.49382716, 0.30864198, 0.49382716, 0.79012346,
 			0.49382716, 0.30864198, 0.49382716, 0.30864198,
 		];
-		this.colors = Array(this.modifier.length).fill(0.0);
 	}
 	psi(z) {
 		return [
@@ -826,6 +833,12 @@ class Quadrilateral extends Element3D {
 			this.line_modifier.push([0.0, 0.0, (this.tama / 20) * (z + 0.5)]);
 		}
 		return Z;
+	}
+	initGeometry() {
+		this.geometry = new THREE.BoxGeometry(1, 1, 1, this.res, this.res, 1);
+		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
+		this.domain = this.transformation(this.geometry);
+		this.colors = Array(this.modifier.length).fill(0.0);
 	}
 }
 
