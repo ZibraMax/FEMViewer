@@ -123,7 +123,7 @@ class ElementView {
 	createView() {
 		let root = document.createElement("div");
 		root.setAttribute("id", "element-view-container-" + this.element.index);
-		root.setAttribute("class", "mini-box");
+		root.setAttribute("class", "mini-box resizable");
 		this.canvas = document.createElement("canvas");
 		this.canvas.setAttribute("id", "element-view-" + this.element.index);
 		this.canvas.setAttribute("class", "box side-pane");
@@ -189,8 +189,8 @@ class ElementView {
 		this.infoText.setAttribute("class", "notification-button-ev noselect");
 		this.infoText.innerHTML = "X = -, Y = -, Z = -, Value = -";
 		footer2.appendChild(this.infoText);
-		footer.appendChild(footer2);
 		footer.appendChild(slider);
+		footer.appendChild(footer2);
 
 		root.appendChild(header);
 		root.appendChild(this.canvas);
@@ -221,6 +221,25 @@ class ElementView {
 			target.setAttribute("data-x", x);
 			target.setAttribute("data-y", y);
 		}
+
+		interact(".resizable")
+			.resizable({
+				preserveAspectRatio: false,
+				edges: { left: false, right: true, bottom: true, top: false },
+			})
+			.on("resizemove", function (event) {
+				var target = event.target,
+					x = parseFloat(target.getAttribute("data-x")) || 0,
+					y = parseFloat(target.getAttribute("data-y")) || 0;
+				target.style.width = event.rect.width + "px";
+				target.style.height = event.rect.height + "px";
+				x += event.deltaRect.left;
+				y += event.deltaRect.top;
+				target.style.webkitTransform = target.style.transform =
+					"translate(" + x + "px," + y + "px)";
+				target.setAttribute("data-x", x);
+				target.setAttribute("data-y", y);
+			});
 	}
 	zoomExtents() {
 		let vFoV = this.camera.getEffectiveFOV();

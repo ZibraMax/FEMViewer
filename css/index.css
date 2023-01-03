@@ -8,9 +8,6 @@ body {
 }
 .noselect {
 	-webkit-touch-callout: none; /* iOS Safari */
-	.draggable {
-		touch-action: none;
-	}
 	-webkit-user-select: none; /* Safari */
 	-khtml-user-select: none; /* Konqueror HTML */
 	-moz-user-select: none; /* Old versions of Firefox */
@@ -155,5 +152,8 @@ body {
 	}
 }
 .draggable {
+	touch-action: none;
+}
+.resizable {
 	touch-action: none;
 }
