@@ -459,16 +459,19 @@ class FEMViewer {
 	toogleSolutionAsDisp() {
 		this.config_dict["displacements"] = this.solution_as_displacement;
 		this.guiSettings();
-		this.updateVariableAsSolution();
 		if (!this.solution_as_displacement) {
-			this.magnifSlider.setValue(0.0);
+			this.magnif = 0.0;
+			this.updateSolutionAsDisplacement();
+		} else {
+			this.updateVariableAsSolution();
 		}
 	}
 	updateVariableAsSolution() {
 		this.animate = false;
 		this.mult = 1;
-		this.updateSolution();
-		this.magnifSlider.setValue(0.4 / this.max_abs_disp);
+		this.magnif = 0.4 / this.max_abs_disp;
+		this.updateDispSlider();
+		this.updateSolutionAsDisplacement();
 	}
 	guiSettings() {
 		// GUI
@@ -556,7 +559,7 @@ class FEMViewer {
 		this.lut.setMax(this.max_color_value);
 		this.lut.setMin(this.min_color_value);
 		this.updateMaterial();
-		this.updateMeshCoords();
+		this.updateColorValues();
 		this.updateGeometry();
 	}
 	updateColorVariable() {
@@ -678,21 +681,14 @@ class FEMViewer {
 		return needResize;
 	}
 	updateMeshCoords() {
+		console.error("Mesh coords");
+
 		for (let i = 0; i < this.elements.length; i++) {
 			const e = this.elements[i];
 			if (this.draw_lines) {
-				e.setGeometryCoords(
-					this.magnif * this.mult,
-					this.norm,
-					this.bufferGeometries[i],
-					this.bufferLines[i]
-				);
+				e.setGeometryCoords(this.magnif * this.mult, this.norm);
 			} else {
-				e.setGeometryCoords(
-					this.magnif * this.mult,
-					this.norm,
-					this.bufferGeometries[i]
-				);
+				e.setGeometryCoords(this.magnif * this.mult, this.norm);
 			}
 		}
 		if (this.colors) {
@@ -1209,8 +1205,7 @@ class FEMViewer {
 		this.infoDetail = this.solutions_info[this.step][this.info];
 	}
 
-	updateU() {
-		this.U = this.solutions[this.step].flat();
+	updateDispSlider() {
 		const max_disp = math.max(this.U);
 		const min_disp = math.min(this.U);
 		this.max_abs_disp =
@@ -1219,6 +1214,13 @@ class FEMViewer {
 			this.magnifSlider.min(-0.4 / this.max_abs_disp);
 			this.magnifSlider.max(0.4 / this.max_abs_disp);
 		}
+	}
+
+	updateU() {
+		console.log("llamado a updateu");
+		this.U = this.solutions[this.step].flat();
+
+		this.updateDispSlider();
 
 		for (const e of this.elements) {
 			e.setUe(
@@ -1226,10 +1228,8 @@ class FEMViewer {
 				this.config_dict["calculateStrain"],
 				this.config_dict["displacements"]
 			);
-			if (this.solution_as_displacement) {
-				e.variableAsDisplacement(this.variable_as_displacement);
-			}
 		}
+		this.updateMeshCoords();
 		this.updateColorVariable();
 	}
 
@@ -1239,6 +1239,15 @@ class FEMViewer {
 	}
 	updateSolution() {
 		this.updateU();
+		this.updateGeometry();
+		this.updateSolutionInfo();
+	}
+	updateSolutionAsDisplacement() {
+		for (const e of this.elements) {
+			if (this.solution_as_displacement) {
+				e.variableAsDisplacement(this.variable_as_displacement);
+			}
+		}
 		this.updateMeshCoords();
 		this.updateGeometry();
 		this.updateSolutionInfo();

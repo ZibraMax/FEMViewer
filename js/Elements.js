@@ -65,13 +65,13 @@ class Element {
 	gdls;
 	Ue;
 	geometry;
-	static res = 1;
 	constructor(coords, gdls) {
 		this.coords = coords;
 		this.gdls = gdls;
 		this.Ue = [];
 		this.nvn = gdls.length;
 		this.scaledJacobian = undefined;
+		this.res = 1;
 	}
 	get _xcenter() {
 		let x = 0;
@@ -183,8 +183,7 @@ class Element {
 			this._ULines.push(_U);
 		}
 	}
-	setGeometryCoords(mult, norm, parent_geometry, line_geometry) {
-		// TODO ver si quitando las geometrías que pasan por parámetro es posible tener el mismo comportamiento. Al fin y al cabo son referencias
+	setGeometryCoords(mult, norm) {
 		if (!mult) {
 			if (mult != 0) {
 				mult = 1.0;
@@ -196,12 +195,8 @@ class Element {
 			}
 		}
 
-		if (!parent_geometry) {
-			parent_geometry = this.geometry;
-		}
-		if (!line_geometry) {
-			line_geometry = this.line_geometry;
-		}
+		const parent_geometry = this.geometry;
+		const line_geometry = this.line_geometry;
 		let count = this._domain.length;
 		for (let i = 0; i < count; i++) {
 			const X = this.X[i];
@@ -418,9 +413,9 @@ class Brick extends Element3D {
 			1,
 			1,
 			1,
-			Element.res,
-			Element.res,
-			Element.res
+			this.res,
+			this.res,
+			this.res
 		);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
@@ -560,7 +555,7 @@ class Tetrahedral extends Element3D {
 		this.ndim = 3;
 		this.nfaces = 4;
 		this.coords_o = coords;
-		this.geometry = newTet(Element.res);
+		this.geometry = newTet(this.res);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		this._domain = this.domain;
@@ -637,7 +632,7 @@ class Lineal extends Element3D {
 			c.push([x]);
 		}
 		this.coords_o = c;
-		this.geometry = new THREE.BoxGeometry(1, 1, 1, Element.res, 1, 1);
+		this.geometry = new THREE.BoxGeometry(1, 1, 1, this.res, 1, 1);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		this.colors = Array(this.modifier.length).fill(0.0);
@@ -700,7 +695,7 @@ class Triangular extends Element3D {
 			c.push([x, y]);
 		}
 		this.coords_o = c;
-		this.geometry = newPrism(Element.res);
+		this.geometry = newPrism(this.res);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		const A0 = 1 / 3;
@@ -772,14 +767,7 @@ class Quadrilateral extends Element3D {
 			c.push([x, y]);
 		}
 		this.coords_o = c;
-		this.geometry = new THREE.BoxGeometry(
-			1,
-			1,
-			1,
-			Element.res,
-			Element.res,
-			1
-		);
+		this.geometry = new THREE.BoxGeometry(1, 1, 1, this.res, this.res, 1);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 
 		this.domain = this.transformation(this.geometry);
