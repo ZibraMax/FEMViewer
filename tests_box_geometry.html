@@ -11,14 +11,27 @@
 			media="screen"
 			href="css/index.css"
 		/>
+		<link
+			rel="stylesheet"
+			type="text/css"
+			media="screen"
+			href="css/lilgui.light.css"
+		/>
 	</head>
 	<body>
-		<canvas width="500" height="500" id="model-view"></canvas>
+		<div id="models-container" class="box animate-bottom">
+			<canvas
+				class="box side-pane"
+				id="model-view"
+				willReadFrequently="true"
+			></canvas>
+		</div>
 
 		<script type="module">
 			import * as THREE from "./js/build/three.module.js";
 			import { OrbitControls } from "./js/build/OrbitControls.js";
 			import { AxisGridHelper } from "./js/build/minigui.js";
+			import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.17/+esm";
 
 			const canvas = document.getElementById("model-view");
 			THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
@@ -29,6 +42,7 @@
 			});
 			const scene = new THREE.Scene();
 			const gh = new AxisGridHelper(scene, 4, 4, 4);
+			gh.visible = false;
 
 			const fov = 40;
 			const aspect = 1; // the canvas default
@@ -44,8 +58,8 @@
 			controls.update();
 
 			// Lights
-			const light = new THREE.AmbientLight(0xffffff, 1.0);
-			scene.add(light);
+			const light = new THREE.PointLight(0xffffff, 1.0);
+			camera.add(light);
 
 			const material = new THREE.MeshLambertMaterial({
 				color: "#dc2c41",
@@ -63,22 +77,66 @@
 				linewidth: 3,
 			});
 
-			const geometry = new THREE.BoxGeometry(1, 1, 1, 5, 5, 5);
-			transformation2(geometry);
-			const mesh = new THREE.Mesh(geometry, material);
-			const edgesGeometry = new THREE.EdgesGeometry(geometry);
-			const lines = new THREE.Mesh(geometry, lineMaterial);
-			const edges = new THREE.LineSegments(edgesGeometry, edgeMaterial);
+			const gui = new GUI({ title: "Settings" });
+			const config = { divisions: 1, tipo: "Prisma" };
+
+			gui.add(config, "divisions", 1, 10, 1)
+				.onChange(updateGeometry)
+				.name("Divisiones")
+				.listen();
+			gui.add(config, "tipo", ["Prisma", "Cubo", "Tetrahedro"])
+				.onChange(updateGeometry)
+				.name("Geometría")
+				.listen();
+
+			gui.add(gh, "visible").name("Grid").listen();
+			const types = {
+				Prisma: transformation1,
+				Cubo: transformation0,
+				Tetrahedro: transformation2,
+			};
+			let n = config["divisions"];
+			var geometry = new THREE.BoxGeometry(1, 1, 1, n, n, n);
+			types[config["tipo"]](geometry);
+			var mesh = new THREE.Mesh(geometry, material);
+			var edgesGeometry = new THREE.EdgesGeometry(geometry);
+			var lines = new THREE.Mesh(geometry, lineMaterial);
+			var edges = new THREE.LineSegments(edgesGeometry, edgeMaterial);
 			scene.add(mesh);
 			scene.add(lines);
 			scene.add(edges);
 
-			render();
+			function updateGeometry() {
+				scene.remove(mesh);
+				mesh.geometry.dispose();
+				mesh.material.dispose();
+				scene.remove(lines);
+				lines.geometry.dispose();
+				lines.material.dispose();
+				scene.remove(edges);
+				edges.geometry.dispose();
+				edges.material.dispose();
+				let n = config["divisions"];
+				var geometry = new THREE.BoxGeometry(1, 1, 1, n, n, n);
+				types[config["tipo"]](geometry);
+				mesh = new THREE.Mesh(geometry, material);
+				edgesGeometry = new THREE.EdgesGeometry(geometry);
+				lines = new THREE.Mesh(geometry, lineMaterial);
+				edges = new THREE.LineSegments(edgesGeometry, edgeMaterial);
+
+				scene.add(mesh);
+				scene.add(lines);
+				scene.add(edges);
+				render();
+				zoomExtents();
+			}
+
+			updateGeometry();
 			zoomExtents();
 
 			let animationFrameID = requestAnimationFrame(update);
 
-			function transformatio0(geo) {
+			function transformation0(geo) {
 				const Z = [];
 				for (let i = 0; i < geo.attributes.position.count; i++) {
 					const x = geo.attributes.position.getX(i);
@@ -86,7 +144,7 @@
 					const z = geo.attributes.position.getZ(i);
 					Z.push([x * 2, y * 2, z * 2]);
 
-					geo.attributes.position.setX(i);
+					geo.attributes.position.setX(i, x * 2);
 					geo.attributes.position.setY(i, y * 2);
 					geo.attributes.position.setZ(i, z * 2);
 				}

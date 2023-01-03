@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>TESTS</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link
+			rel="stylesheet"
+			type="text/css"
+			media="screen"
+			href="css/index.css"
+		/>
+	</head>
+	<body>
+		<div id="models-container" class="box animate-bottom">
+			<canvas
+				class="box side-pane"
+				id="model-view"
+				willReadFrequently="true"
+			></canvas>
+		</div>
+
+		<script type="module">
+			class Triangle {
+				constructor(coords) {
+					this.coords = coords || [
+						[0.0, 0.0, 0.5],
+						[1.0, 0.0, 0.5],
+						[0.0, 1.0, 0.5],
+					];
+					this.divided = false;
+					this.children = [];
+				}
+
+				divide(n = 1) {
+					if (n == 0) {
+						return;
+					} else {
+						this.subdivide();
+						for (const ch of this.children) {
+							ch.divide(n - 1);
+						}
+					}
+				}
+
+				subdivide() {
+					this.divided = true;
+					const c = this.coords;
+					let mid1 = [
+						c[1][0] / 2 + c[0][0] / 2,
+						c[1][1] / 2 + c[0][1] / 2,
+						c[1][2] / 2 + c[0][2] / 2,
+					];
+					let mid2 = [
+						c[2][0] / 2 + c[0][0] / 2,
+						c[2][1] / 2 + c[0][1] / 2,
+						c[2][2] / 2 + c[0][2] / 2,
+					];
+					let mid3 = [
+						c[2][0] / 2 + c[1][0] / 2,
+						c[2][1] / 2 + c[1][1] / 2,
+						c[2][2] / 2 + c[1][2] / 2,
+					];
+
+					let Ta = new Triangle([c[0], mid1, mid2]);
+					let Tb = new Triangle([mid3, mid2, mid1]);
+					let Tc = new Triangle([mid1, c[1], mid3]);
+					let Td = new Triangle([mid2, mid3, c[2]]);
+					this.children = [Ta, Tb, Tc, Td];
+				}
+
+				giveCoords() {
+					let result = [];
+					if (!this.divided) {
+						return this.coords;
+					}
+					for (const ch of this.children) {
+						result = result.concat(ch.giveCoords());
+					}
+					return result;
+				}
+			}
+			class Prism {
+				constructor() {
+					this.topTriang = new Triangle([
+						[0.0, 0.0, -0.5],
+						[1.0, 0.0, -0.5],
+						[0.0, 1.0, -0.5],
+					]);
+					let ct = this.topTriang.coords;
+					this.bottomTriang = new Triangle([
+						[0.0, 0.0, 0.5],
+						[1.0, 0.0, 0.5],
+						[0.0, 1.0, 0.5],
+					]);
+					let cb = this.bottomTriang.coords;
+					this.sideTriangles = [
+						cb[0],
+						cb[2],
+						ct[2],
+						cb[0],
+						ct[0],
+						ct[2],
+						cb[1],
+						cb[2],
+						ct[2],
+						ct[1],
+						ct[2],
+						cb[1],
+						cb[0],
+						cb[1],
+						ct[1],
+						cb[0],
+						ct[0],
+						ct[1],
+					];
+				}
+				giveCoords() {
+					let coords = this.topTriang.giveCoords();
+					coords = coords.concat(this.bottomTriang.giveCoords());
+					coords = coords.concat(this.sideTriangles);
+					return coords.flat();
+				}
+				divide(n) {
+					this.topTriang.divide(n);
+					this.bottomTriang.divide(n);
+				}
+			}
+			class Tet {
+				constructor() {
+					this.topTriang = new Triangle([
+						[0.0, 0.0, 1.0],
+						[1.0, 0.0, 0.0],
+						[0.0, 1.0, 0.0],
+					]);
+					this.bottomTriang = new Triangle([
+						[0.0, 0.0, 0.0],
+						[1.0, 0.0, 0.0],
+						[0.0, 1.0, 0.0],
+					]);
+
+					this.leftTriang = new Triangle([
+						[0.0, 0.0, 0.0],
+						[0.0, 0.0, 1.0],
+						[0.0, 1.0, 0.0],
+					]);
+					this.rightTriang = new Triangle([
+						[0.0, 0.0, 0.0],
+						[1.0, 0.0, 0.0],
+						[0.0, 0.0, 1],
+					]);
+				}
+				giveCoords() {
+					let coords = this.topTriang.giveCoords();
+					coords = coords.concat(this.bottomTriang.giveCoords());
+					coords = coords.concat(this.leftTriang.giveCoords());
+					coords = coords.concat(this.rightTriang.giveCoords());
+					return coords.flat();
+				}
+				divide(n) {
+					this.topTriang.divide(n);
+					this.bottomTriang.divide(n);
+					this.leftTriang.divide(n);
+					this.rightTriang.divide(n);
+				}
+			}
+
+			import * as THREE from "./js/build/three.module.js";
+			import { OrbitControls } from "./js/build/OrbitControls.js";
+			import { AxisGridHelper } from "./js/build/minigui.js";
+			import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.17/+esm";
+
+			const canvas = document.getElementById("model-view");
+			THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
+			const renderer = new THREE.WebGLRenderer({
+				canvas,
+				antialias: true,
+				alpha: true,
+			});
+			const gui = new GUI({ title: "Settings" });
+			const scene = new THREE.Scene();
+			const gh = new AxisGridHelper(scene, 4, 4, 4);
+			gh.visible = false;
+
+			const fov = 40;
+			const aspect = 1; // the canvas default
+			const near = 0.01;
+			const far = 200;
+			const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+			camera.position.set(25, 25, 25);
+			camera.lookAt(0, 0, 0);
+			scene.add(camera);
+
+			const controls = new OrbitControls(camera, canvas);
+			controls.target.set(0, 0, 0);
+			controls.update();
+
+			// Lights
+			const light = new THREE.PointLight(0xffffff, 1.0);
+			camera.add(light);
+
+			const material = new THREE.MeshLambertMaterial({
+				color: "#dc2c41",
+				emissive: "#dc2c41",
+				side: THREE.DoubleSide,
+			});
+
+			const lineMaterial = new THREE.MeshLambertMaterial({
+				color: "white",
+				linewidth: 3,
+				wireframe: true,
+			});
+
+			const edgeMaterial = new THREE.LineBasicMaterial({
+				color: "black",
+				linewidth: 3,
+			});
+
+			var geometry = new THREE.BufferGeometry();
+
+			const config = { divisions: 0, tipo: "Prisma" };
+
+			gui.add(config, "divisions", 0, 6, 1)
+				.onChange(updateGeometry)
+				.name("Divisiones")
+				.listen();
+			gui.add(config, "tipo", ["Prisma", "Triangulo", "Tetrahedro"])
+				.onChange(updateGeometry)
+				.name("Geometría")
+				.listen();
+			gui.add(gh, "visible").name("Grid").listen();
+			const types = {
+				Prisma: Prism,
+				Triangulo: Triangle,
+				Tetrahedro: Tet,
+			};
+
+			var tr = new types[config["tipo"]]();
+
+			tr.divide(config["divisions"]);
+			var coordinates = tr.giveCoords().flat();
+			var vertices = new Float32Array(coordinates);
+			geometry.setAttribute(
+				"position",
+				new THREE.BufferAttribute(vertices, 3)
+			);
+			geometry.computeVertexNormals();
+
+			var mesh = new THREE.Mesh(geometry, material);
+			var edgesGeometry = new THREE.EdgesGeometry(geometry);
+			var lines = new THREE.Mesh(geometry, lineMaterial);
+			var edges = new THREE.LineSegments(edgesGeometry, edgeMaterial);
+
+			function updateGeometry() {
+				scene.remove(mesh);
+				mesh.geometry.dispose();
+				mesh.material.dispose();
+				scene.remove(lines);
+				lines.geometry.dispose();
+				lines.material.dispose();
+				scene.remove(edges);
+				edges.geometry.dispose();
+				edges.material.dispose();
+
+				var tr = new types[config["tipo"]]();
+				tr.divide(config["divisions"]);
+				const coordinates = tr.giveCoords().flat();
+				const vertices = new Float32Array(coordinates);
+				geometry = new THREE.BufferGeometry();
+				geometry.setAttribute(
+					"position",
+					new THREE.BufferAttribute(vertices, 3)
+				);
+				geometry.computeVertexNormals();
+
+				mesh = new THREE.Mesh(geometry, material);
+				edgesGeometry = new THREE.EdgesGeometry(geometry);
+				lines = new THREE.Mesh(geometry, lineMaterial);
+				edges = new THREE.LineSegments(edgesGeometry, edgeMaterial);
+
+				scene.add(mesh);
+				scene.add(lines);
+				scene.add(edges);
+				render();
+			}
+
+			updateGeometry();
+			zoomExtents();
+
+			let animationFrameID = requestAnimationFrame(update);
+
+			function transformation0(geo) {
+				const Z = [];
+				for (let i = 0; i < geo.attributes.position.count; i++) {
+					const x = geo.attributes.position.getX(i);
+					const y = geo.attributes.position.getY(i);
+					const z = geo.attributes.position.getZ(i);
+					Z.push([x * 2, y * 2, z * 2]);
+
+					geo.attributes.position.setX(i, x * 2);
+					geo.attributes.position.setY(i, y * 2);
+					geo.attributes.position.setZ(i, z * 2);
+				}
+				return Z;
+			}
+
+			function transformation1(geo) {
+				for (let i = 0; i < geo.attributes.position.count; i++) {
+					const x = geo.attributes.position.getX(i) + 0.5;
+					const y = geo.attributes.position.getY(i) + 0.5;
+					const z = geo.attributes.position.getZ(i) + 0.5;
+
+					geo.attributes.position.setX(i, x * (1 - y));
+					geo.attributes.position.setY(i, y);
+					geo.attributes.position.setZ(i, z);
+				}
+			}
+
+			function transformation2(geo) {
+				for (let i = 0; i < geo.attributes.position.count; i++) {
+					const x = geo.attributes.position.getX(i) + 0.5;
+					const y = geo.attributes.position.getY(i) + 0.5;
+					const z = geo.attributes.position.getZ(i) + 0.5;
+
+					geo.attributes.position.setX(i, x * (1 - y) * (1 - z));
+					geo.attributes.position.setY(i, y * (1 - z));
+					geo.attributes.position.setZ(i, z);
+				}
+			}
+
+			function resizeRendererToDisplaySize() {
+				const canvas = renderer.domElement;
+				const pixelRatio = window.devicePixelRatio;
+				const width = (canvas.clientWidth * pixelRatio) | 0;
+				const height = (canvas.clientHeight * pixelRatio) | 0;
+				const needResize =
+					canvas.width !== width || canvas.height !== height;
+				if (needResize) {
+					renderer.setSize(width, height, false);
+				}
+				return needResize;
+			}
+			function render() {
+				if (resizeRendererToDisplaySize()) {
+					const canvas = renderer.domElement;
+					const aspect = canvas.clientWidth / canvas.clientHeight;
+					camera.aspect = aspect;
+					camera.updateProjectionMatrix();
+				}
+				renderer.render(scene, camera);
+			}
+			function update() {
+				render();
+				animationFrameID = requestAnimationFrame(update);
+			}
+			function zoomExtents() {
+				let vFoV = camera.getEffectiveFOV();
+				let hFoV = camera.fov * camera.aspect;
+
+				let FoV = Math.min(vFoV, hFoV);
+				let FoV2 = FoV / 2;
+
+				let dir = new THREE.Vector3();
+				camera.getWorldDirection(dir);
+
+				let bb = mesh.geometry.boundingBox;
+				let bs = mesh.geometry.boundingSphere;
+				let bsWorld = bs.center.clone();
+				mesh.localToWorld(bsWorld);
+
+				let th = (FoV2 * Math.PI) / 180.0;
+				let sina = Math.sin(th);
+				let R = bs.radius;
+				let FL = R / sina;
+
+				let cameraDir = new THREE.Vector3();
+				camera.getWorldDirection(cameraDir);
+
+				let cameraOffs = cameraDir.clone();
+				cameraOffs.multiplyScalar(-FL);
+				let newCameraPos = bsWorld.clone().add(cameraOffs);
+
+				camera.position.copy(newCameraPos);
+				camera.lookAt(bsWorld);
+				controls.target.copy(bsWorld);
+
+				controls.update();
+			}
+		</script>
+	</body>
+</html>
