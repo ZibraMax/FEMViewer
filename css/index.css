@@ -84,7 +84,7 @@ body {
 	top: 20px;
 	left: 20px;
 	height: 320px;
-	width: 320px;
+	width: 370px;
 	resize: both;
 	overflow: hidden;
 	border: solid 2px var(--gui-title-background-color);

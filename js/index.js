@@ -6,7 +6,7 @@ let axis = 6;
 let zoom = 1;
 let lines = true;
 
-let path_str = "ESFERA_SIN_BORDES";
+let path_str = "2D_I_SHAPE";
 let queryString = window.location.search;
 let vis_param = 0;
 if (queryString != "") {

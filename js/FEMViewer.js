@@ -500,10 +500,16 @@ class FEMViewer {
 			.listen()
 			.name("Click mode");
 		this.gui
-			.add(this, "resolution", 1, 7, 1)
+			.add(this, "resolution", {
+				"Low (only vertices) (1)": 1,
+				"Medium (2)": 2,
+				"High (4)": 3,
+				"Ultra (8)": 4,
+				"PC becomes room heater (16)": 5,
+			})
 			.listen()
 			.onChange(this.updateResolution.bind(this))
-			.name("Resolution");
+			.name("LOD ⚠️ (expensive)");
 	}
 	toogleSolutionAsDisp() {
 		this.config_dict["displacements"] = this.solution_as_displacement;

@@ -1,6 +1,13 @@
 import * as THREE from "./build/three.module.js";
 import { OrbitControls } from "./build/OrbitControls.js";
-//import { fromElement } from "./build/Elements.js";
+
+const LOD_LEVELS = {
+	1: "Low (only vertices) (1)",
+	2: "Medium (2)",
+	3: "High (4)",
+	4: "Ultra (8)",
+	5: "PC becomes room heater (16)",
+};
 
 class ElementView {
 	static parent = document.getElementById("models-container");
@@ -136,8 +143,8 @@ class ElementView {
 		header.innerHTML =
 			"<i class='fa-regular fa-solid fa-up-down-left-right'></i> Element " +
 			this.element.index +
-			" | Resolution=" +
-			this.res;
+			" | LOD: " +
+			LOD_LEVELS[this.res];
 		this.closeButton = document.createElement("i");
 		//canvas.setAttribute("id", "element-view-" + this.element.index);
 		this.closeButton.setAttribute("class", "closeButton fa-solid fa-xmark");
@@ -153,7 +160,7 @@ class ElementView {
 		let slider = document.createElement("input");
 		slider.setAttribute("type", "range");
 		slider.setAttribute("min", "1");
-		slider.setAttribute("max", "6");
+		slider.setAttribute("max", "5");
 		slider.setAttribute("step", "1");
 		slider.setAttribute("value", this.res);
 		slider.setAttribute("class", "slider");
@@ -162,8 +169,8 @@ class ElementView {
 			header.innerHTML =
 				"<i class='fa-regular fa-solid fa-up-down-left-right'></i> Element " +
 				this.element.index +
-				" | Resolution=" +
-				this.res;
+				" | LOD: " +
+				LOD_LEVELS[this.res];
 			root.appendChild(this.closeButton);
 			this.restartElement();
 			this.updateGeometry();
@@ -258,7 +265,7 @@ class ElementView {
 		this.camera.getWorldDirection(cameraDir);
 
 		let cameraOffs = cameraDir.clone();
-		cameraOffs.multiplyScalar(-FL);
+		cameraOffs.multiplyScalar(-FL * 1.15);
 		let newCameraPos = bsWorld.clone().add(cameraOffs);
 
 		this.camera.position.copy(newCameraPos);

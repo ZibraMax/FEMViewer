@@ -535,9 +535,9 @@ class Brick extends Element3D {
 			1,
 			1,
 			1,
-			this.res,
-			this.res,
-			this.res
+			2 ** (this.res - 1),
+			2 ** (this.res - 1),
+			2 ** (this.res - 1)
 		);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
@@ -693,7 +693,14 @@ class Lineal extends Element3D {
 		return Z;
 	}
 	initGeometry() {
-		this.geometry = new THREE.BoxGeometry(1, 1, 1, this.res, 1, 1);
+		this.geometry = new THREE.BoxGeometry(
+			1,
+			1,
+			1,
+			2 ** (this.res - 1),
+			1,
+			1
+		);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		this.colors = Array(this.modifier.length).fill(0.0);
@@ -862,7 +869,14 @@ class Quadrilateral extends Element3D {
 		return Z;
 	}
 	initGeometry() {
-		this.geometry = new THREE.BoxGeometry(1, 1, 1, this.res, this.res, 1);
+		this.geometry = new THREE.BoxGeometry(
+			1,
+			1,
+			1,
+			2 ** (this.res - 1),
+			2 ** (this.res - 1),
+			1
+		);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		this.colors = Array(this.modifier.length).fill(0.0);
