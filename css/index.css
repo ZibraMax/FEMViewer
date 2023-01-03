@@ -17,6 +17,7 @@ body {
 }
 .box {
 	height: 100%;
+	overflow: hidden;
 }
 .side-pane {
 	width: 100%;
