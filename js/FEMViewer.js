@@ -370,7 +370,7 @@ class FEMViewer {
 	reset() {
 		this.solution_as_displacement = false;
 		this.variable_as_displacement = 2;
-		this.toogleSolutionAsDisp();
+		this.toogleSolutionAsDisp(); // THIS TOOGLE DISPLACEMENTS!!!
 		const track = this.resource_tracker.track.bind(this.resource_tracker);
 
 		track(this.model);
@@ -569,7 +569,6 @@ class FEMViewer {
 				.onChange(() => {
 					this.updateMeshCoords();
 					this.updateGeometry();
-					console.log(this.magnif);
 				});
 		}
 	}
@@ -1168,10 +1167,12 @@ class FEMViewer {
 		this.config_dict["dict"] = d;
 		if (jsondata["properties"]) {
 			if (CONFIG_DICT[jsondata["properties"]["problem"]]) {
-				this.config_dict =
-					CONFIG_DICT[jsondata["properties"]["problem"]];
+				this.config_dict = {
+					...CONFIG_DICT[jsondata["properties"]["problem"]],
+				};
 			}
 		}
+		console.log(this.config_dict);
 		this.element_properties = {};
 		let prop_dict = {};
 		for (const p of this.config_dict["props"]) {
