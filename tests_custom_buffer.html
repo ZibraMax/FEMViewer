@@ -22,6 +22,22 @@
 		</div>
 
 		<script type="module">
+			const style = getComputedStyle(document.body);
+			const TEXT_COLOR = style
+				.getPropertyValue("--gui-text-color")
+				.trim();
+			const BACKGROUND_COLOR = style
+				.getPropertyValue("--gui-background-color")
+				.trim();
+			const TITLE_BACKGROUND_COLOR = style
+				.getPropertyValue("--gui-title-background-color")
+				.trim();
+			const PLOT_GRID_COLOR = style
+				.getPropertyValue("--plot-grid-color")
+				.trim();
+			const FONT_FAMILY = style.getPropertyValue("--font-family").trim();
+			const FOCUS_COLOR = style.getPropertyValue("--focus-color").trim();
+			const LINES_COLOR = style.getPropertyValue("--lines-color").trim();
 			import {
 				Tet,
 				Prism,
@@ -62,19 +78,18 @@
 			camera.add(light);
 
 			const material = new THREE.MeshLambertMaterial({
-				color: "#dc2c41",
-				emissive: "#dc2c41",
-				//side: THREE.DoubleSide,
+				color: FOCUS_COLOR,
+				emissive: FOCUS_COLOR,
 			});
 
 			const lineMaterial = new THREE.MeshLambertMaterial({
-				color: "white",
+				color: PLOT_GRID_COLOR,
 				linewidth: 3,
 				wireframe: true,
 			});
 
 			const edgeMaterial = new THREE.LineBasicMaterial({
-				color: "black",
+				color: LINES_COLOR,
 				linewidth: 3,
 			});
 
