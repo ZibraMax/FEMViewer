@@ -64,47 +64,91 @@ class Triangle {
 class Prism {
 	constructor() {
 		this.topTriang = new Triangle([
-			[0.0, 0.0, 0.0],
-			[1.0, 0.0, 0.0],
-			[0.0, 1.0, 0.0],
-		]);
-		let ct = this.topTriang.coords;
-		this.bottomTriang = new Triangle([
 			[0.0, 0.0, 1.0],
 			[1.0, 0.0, 1.0],
 			[0.0, 1.0, 1.0],
 		]);
+		let ct = this.topTriang.coords;
+		this.bottomTriang = new Triangle([
+			[0.0, 0.0, 0.0],
+			[1.0, 0.0, 0.0],
+			[0.0, 1.0, 0.0],
+		]);
 		let cb = this.bottomTriang.coords;
 		this.sideTriangles = [
-			cb[0],
 			cb[2],
-			ct[2],
 			cb[0],
 			ct[2],
-			ct[0],
-			cb[1],
 			ct[2],
-			cb[2],
-			ct[1],
-			ct[2],
-			cb[1],
-			cb[1],
-			cb[0],
-			ct[1],
 			cb[0],
 			ct[0],
+			ct[2],
+			cb[1],
+			cb[2],
+			ct[2],
+			ct[1],
+			cb[1],
+			cb[0],
+			cb[1],
+			ct[1],
+			ct[0],
+			cb[0],
 			ct[1],
 		];
 	}
 	giveCoords() {
-		let coords = this.topTriang.giveCoords(true);
-		coords = coords.concat(this.bottomTriang.giveCoords());
+		let coords = this.topTriang.giveCoords();
+		coords = coords.concat(this.bottomTriang.giveCoords(true));
 		coords = coords.concat(this.sideTriangles);
 		return coords.flat();
 	}
 	divide(n) {
 		this.topTriang.divide(n);
 		this.bottomTriang.divide(n);
+		this.sideTriangles = [];
+		let h = 1 / 2 ** n;
+		for (let i = 0; i < 2 ** n; i++) {
+			const left = i * h;
+			const right = (i + 1) * h;
+			const t1 = [
+				[left, 0.0, 1.0],
+				[left, 0.0, 0.0],
+				[right, 0.0, 1.0],
+			];
+			const t2 = [
+				[left, 0.0, 0.0],
+				[right, 0.0, 0.0],
+				[right, 0.0, 1.0],
+			];
+
+			const t3 = [
+				[0.0, left, 1.0],
+				[0.0, right, 1.0],
+				[0.0, left, 0.0],
+			];
+			const t4 = [
+				[0.0, left, 0.0],
+				[0.0, right, 1.0],
+				[0.0, right, 0.0],
+			];
+
+			const t5 = [
+				[left, 1 - left, 1.0],
+				[right, 1 - right, 0.0],
+				[left, 1 - left, 0.0],
+			];
+			const t6 = [
+				[left, 1 - left, 1.0],
+				[right, 1 - right, 1.0],
+				[right, 1 - right, 0.0],
+			];
+			this.sideTriangles = this.sideTriangles.concat(t1);
+			this.sideTriangles = this.sideTriangles.concat(t2);
+			this.sideTriangles = this.sideTriangles.concat(t3);
+			this.sideTriangles = this.sideTriangles.concat(t4);
+			this.sideTriangles = this.sideTriangles.concat(t5);
+			this.sideTriangles = this.sideTriangles.concat(t6);
+		}
 	}
 }
 class Tet {
