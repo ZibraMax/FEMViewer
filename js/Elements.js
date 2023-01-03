@@ -65,7 +65,7 @@ class Element {
 	gdls;
 	Ue;
 	geometry;
-	static res = 3;
+	static res = 1;
 	constructor(coords, gdls) {
 		this.coords = coords;
 		this.gdls = gdls;
