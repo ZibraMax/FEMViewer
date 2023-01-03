@@ -833,6 +833,12 @@ class FEMViewer {
 	}
 
 	createElementView(e) {
+		if (this.element_views.size >= 3) {
+			const values = this.element_views.values();
+			const obj = values.next();
+			const first = obj.value;
+			this.destroy_element_view(first);
+		}
 		let element_view = new ElementView(e, this, this.resolution);
 		this.element_views.add(element_view);
 		//this.show_element_views();

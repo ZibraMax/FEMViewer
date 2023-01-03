@@ -105,6 +105,7 @@ class ElementView {
 		this.contour.material.dispose();
 		this.scene.clear();
 		this.renderer.dispose();
+		this.renderer.forceContextLoss();
 		this.res = this.parent.resolution;
 		this.restartElement();
 	}
