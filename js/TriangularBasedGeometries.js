@@ -46,13 +46,17 @@ class Triangle {
 		this.children = [Ta, Tb, Tc, Td];
 	}
 
-	giveCoords() {
+	giveCoords(reverse = false) {
 		let result = [];
 		if (!this.divided) {
-			return this.coords;
+			if (reverse) {
+				return [...this.coords].reverse();
+			} else {
+				return this.coords;
+			}
 		}
 		for (const ch of this.children) {
-			result = result.concat(ch.giveCoords());
+			result = result.concat(ch.giveCoords(reverse));
 		}
 		return result;
 	}
@@ -60,15 +64,15 @@ class Triangle {
 class Prism {
 	constructor() {
 		this.topTriang = new Triangle([
-			[0.0, 0.0, -0.5],
-			[1.0, 0.0, -0.5],
-			[0.0, 1.0, -0.5],
+			[0.0, 0.0, 0.0],
+			[1.0, 0.0, 0.0],
+			[0.0, 1.0, 0.0],
 		]);
 		let ct = this.topTriang.coords;
 		this.bottomTriang = new Triangle([
-			[0.0, 0.0, 0.5],
-			[1.0, 0.0, 0.5],
-			[0.0, 1.0, 0.5],
+			[0.0, 0.0, 1.0],
+			[1.0, 0.0, 1.0],
+			[0.0, 1.0, 1.0],
 		]);
 		let cb = this.bottomTriang.coords;
 		this.sideTriangles = [
@@ -76,16 +80,16 @@ class Prism {
 			cb[2],
 			ct[2],
 			cb[0],
+			ct[2],
 			ct[0],
-			ct[2],
 			cb[1],
-			cb[2],
 			ct[2],
+			cb[2],
 			ct[1],
 			ct[2],
 			cb[1],
-			cb[0],
 			cb[1],
+			cb[0],
 			ct[1],
 			cb[0],
 			ct[0],
@@ -93,7 +97,7 @@ class Prism {
 		];
 	}
 	giveCoords() {
-		let coords = this.topTriang.giveCoords();
+		let coords = this.topTriang.giveCoords(true);
 		coords = coords.concat(this.bottomTriang.giveCoords());
 		coords = coords.concat(this.sideTriangles);
 		return coords.flat();
@@ -129,7 +133,7 @@ class Tet {
 	}
 	giveCoords() {
 		let coords = this.topTriang.giveCoords();
-		coords = coords.concat(this.bottomTriang.giveCoords());
+		coords = coords.concat(this.bottomTriang.giveCoords(true));
 		coords = coords.concat(this.leftTriang.giveCoords());
 		coords = coords.concat(this.rightTriang.giveCoords());
 		return coords.flat();

@@ -1,4 +1,27 @@
 import * as THREE from "./build/three.module.js";
+import { Prism, Tet } from "./TriangularBasedGeometries.js";
+
+function newPrism(n = 1) {
+	const tr = new Prism();
+	tr.divide(n - 1);
+	const coordinates = tr.giveCoords().flat();
+	const vertices = new Float32Array(coordinates);
+	const geometry = new THREE.BufferGeometry();
+	geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+	geometry.computeVertexNormals();
+	return geometry;
+}
+
+function newTet(n = 1) {
+	const tr = new Tet();
+	tr.divide(n - 1);
+	const coordinates = tr.giveCoords().flat();
+	const vertices = new Float32Array(coordinates);
+	const geometry = new THREE.BufferGeometry();
+	geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+	geometry.computeVertexNormals();
+	return geometry;
+}
 
 function transpose(arr) {
 	return arr[0].map((_, colIndex) => arr.map((row) => row[colIndex]));
@@ -42,7 +65,7 @@ class Element {
 	gdls;
 	Ue;
 	geometry;
-	static res = 1;
+	static res = 3;
 	constructor(coords, gdls) {
 		this.coords = coords;
 		this.gdls = gdls;
@@ -133,7 +156,7 @@ class Element {
 				0.0, 0.0, 0.0,
 			]);
 		}
-	} //line_modifier
+	}
 	variableAsDisplacement(variable) {
 		this._U = [];
 		this._ULines = [];
@@ -161,6 +184,7 @@ class Element {
 		}
 	}
 	setGeometryCoords(mult, norm, parent_geometry, line_geometry) {
+		// TODO ver si quitando las geometrías que pasan por parámetro es posible tener el mismo comportamiento. Al fin y al cabo son referencias
 		if (!mult) {
 			if (mult != 0) {
 				mult = 1.0;
@@ -536,14 +560,7 @@ class Tetrahedral extends Element3D {
 		this.ndim = 3;
 		this.nfaces = 4;
 		this.coords_o = coords;
-		this.geometry = new THREE.BoxGeometry(
-			1,
-			1,
-			1,
-			Element.res,
-			Element.res,
-			Element.res
-		);
+		this.geometry = newTet(Element.res);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		this._domain = this.domain;
@@ -589,17 +606,17 @@ class Tetrahedral extends Element3D {
 		this.line_modifier = [];
 		const Z = [];
 		for (let i = 0; i < geo.attributes.position.count; i++) {
-			const x = geo.attributes.position.getX(i) + 0.5;
-			const y = geo.attributes.position.getY(i) + 0.5;
-			const z = geo.attributes.position.getZ(i) + 0.5;
+			const x = geo.attributes.position.getX(i);
+			const y = geo.attributes.position.getY(i);
+			const z = geo.attributes.position.getZ(i);
 			this.modifier.push([0.0, 0.0, 0.0]);
-			Z.push([x * (1 - y) * (1 - z), y * (1 - z), z]);
+			Z.push([x, y, z]);
 		}
 		for (let i = 0; i < this.line_geometry.attributes.position.count; i++) {
-			const x = this.line_geometry.attributes.position.getX(i) + 0.5;
-			const y = this.line_geometry.attributes.position.getY(i) + 0.5;
-			const z = this.line_geometry.attributes.position.getZ(i) + 0.5;
-			this.line_domain.push([x * (1 - y) * (1 - z), y * (1 - z), z]);
+			const x = this.line_geometry.attributes.position.getX(i);
+			const y = this.line_geometry.attributes.position.getY(i);
+			const z = this.line_geometry.attributes.position.getZ(i);
+			this.line_domain.push([x, y, z]);
 			this.line_modifier.push([0.0, 0.0, 0.0]);
 		}
 		return Z;
@@ -683,14 +700,7 @@ class Triangular extends Element3D {
 			c.push([x, y]);
 		}
 		this.coords_o = c;
-		this.geometry = new THREE.BoxGeometry(
-			1,
-			1,
-			1,
-			Element.res,
-			Element.res,
-			1
-		);
+		this.geometry = newPrism(Element.res);
 		this.line_geometry = new THREE.EdgesGeometry(this.geometry);
 		this.domain = this.transformation(this.geometry);
 		const A0 = 1 / 3;
@@ -728,18 +738,18 @@ class Triangular extends Element3D {
 		this.line_modifier = [];
 		const Z = [];
 		for (let i = 0; i < geo.attributes.position.count; i++) {
-			const x = geo.attributes.position.getX(i) + 0.5;
-			const y = geo.attributes.position.getY(i) + 0.5;
-			const z = geo.attributes.position.getZ(i) + 0.5;
-			Z.push([x * (1 - y), y, z]);
-			this._domain.push([x * (1 - y), y]);
+			const x = geo.attributes.position.getX(i);
+			const y = geo.attributes.position.getY(i);
+			const z = geo.attributes.position.getZ(i);
+			Z.push([x, y, z]);
+			this._domain.push([x, y]);
 			this.modifier.push([0.0, 0.0, (this.tama / 20) * z]);
 		}
 		for (let i = 0; i < this.line_geometry.attributes.position.count; i++) {
-			const x = this.line_geometry.attributes.position.getX(i) + 0.5;
-			const y = this.line_geometry.attributes.position.getY(i) + 0.5;
-			const z = this.line_geometry.attributes.position.getZ(i) + 0.5;
-			this.line_domain.push([x * (1 - y), y]);
+			const x = this.line_geometry.attributes.position.getX(i);
+			const y = this.line_geometry.attributes.position.getY(i);
+			const z = this.line_geometry.attributes.position.getZ(i);
+			this.line_domain.push([x, y]);
 			this.line_modifier.push([0.0, 0.0, (this.tama / 20) * z]);
 		}
 		return Z;
