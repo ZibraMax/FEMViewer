@@ -10,7 +10,7 @@ import {
 	Serendipity,
 	LinealO2,
 	Element3D,
-} from "./build/Elements.js";
+} from "./Elements.js";
 const types = {
 	B1V: Brick,
 	B2V: BrickO2,

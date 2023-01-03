@@ -1,4 +1,4 @@
-import * as THREE from "./three.module.js";
+import * as THREE from "./build/three.module.js";
 
 function transpose(arr) {
 	return arr[0].map((_, colIndex) => arr.map((row) => row[colIndex]));
