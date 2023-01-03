@@ -1,50 +1,6 @@
 import * as THREE from "./build/three.module.js";
 import { OrbitControls } from "./build/OrbitControls.js";
 //import { fromElement } from "./build/Elements.js";
-function dragElement(elmnt) {
-	var pos1 = 0,
-		pos2 = 0,
-		pos3 = 0,
-		pos4 = 0;
-	if (document.getElementById(elmnt.id + "header")) {
-		// if present, the header is where you move the DIV from:
-		document.getElementById(elmnt.id + "header").onmousedown =
-			dragMouseDown;
-	} else {
-		// otherwise, move the DIV from anywhere inside the DIV:
-		elmnt.onmousedown = dragMouseDown;
-	}
-
-	function dragMouseDown(e) {
-		e = e || window.event;
-		e.preventDefault();
-		// get the mouse cursor position at startup:
-		pos3 = e.clientX;
-		pos4 = e.clientY;
-		document.onmouseup = closeDragElement;
-		// call a function whenever the cursor moves:
-		document.onmousemove = elementDrag;
-	}
-
-	function elementDrag(e) {
-		e = e || window.event;
-		e.preventDefault();
-		// calculate the new cursor position:
-		pos1 = pos3 - e.clientX;
-		pos2 = pos4 - e.clientY;
-		pos3 = e.clientX;
-		pos4 = e.clientY;
-		// set the element's new position:
-		elmnt.style.top = elmnt.offsetTop - pos2 + "px";
-		elmnt.style.left = elmnt.offsetLeft - pos1 + "px";
-	}
-
-	function closeDragElement() {
-		// stop moving when mouse button is released:
-		document.onmouseup = null;
-		document.onmousemove = null;
-	}
-}
 
 class ElementView {
 	static parent = document.getElementById("models-container");
@@ -180,7 +136,10 @@ class ElementView {
 			"id",
 			"element-view-container-" + this.element.index + "header"
 		);
-		header.setAttribute("class", "header-element-viewer noselect");
+		header.setAttribute(
+			"class",
+			"header-element-viewer noselect draggable"
+		);
 		header.innerHTML =
 			"<i class='fa-regular fa-solid fa-up-down-left-right'></i> Element " +
 			this.element.index +
@@ -191,12 +150,12 @@ class ElementView {
 		this.closeButton.setAttribute("class", "fa-solid fa-xmark");
 		this.closeButton.setAttribute(
 			"style",
-			"position:absolute;right: 10px;"
+			"position:absolute;top: 5px;right: 10px;z-index:100"
 		);
 		this.closeButton.addEventListener("click", () => {
 			this.parent.destroy_element_view(this);
 		});
-		header.appendChild(this.closeButton);
+		root.appendChild(this.closeButton);
 
 		let slider = document.createElement("input");
 		slider.setAttribute("type", "range");
@@ -212,7 +171,7 @@ class ElementView {
 				this.element.index +
 				"| Resolution=" +
 				this.res;
-			header.appendChild(this.closeButton);
+			root.appendChild(this.closeButton);
 			this.restartElement();
 			this.updateGeometry();
 			this.render();
@@ -237,8 +196,31 @@ class ElementView {
 		root.appendChild(this.canvas);
 		root.appendChild(footer);
 		ElementView.parent.appendChild(root);
-		dragElement(root);
 		this.root = root;
+
+		interact(".draggable").draggable({
+			modifiers: [
+				interact.modifiers.restrictRect({
+					restriction: document.body,
+				}),
+			],
+			listeners: {
+				move: dragMoveListener,
+			},
+		});
+
+		function dragMoveListener(event) {
+			var target = event.target.parentElement;
+			var x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
+			var y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
+
+			// translate the element
+			target.style.transform = "translate(" + x + "px, " + y + "px)";
+
+			// update the posiion attributes
+			target.setAttribute("data-x", x);
+			target.setAttribute("data-y", y);
+		}
 	}
 	zoomExtents() {
 		let vFoV = this.camera.getEffectiveFOV();
