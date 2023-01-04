@@ -605,7 +605,10 @@ class FEMViewer {
 		this.gui
 			.add(this, "wireframe")
 			.listen()
-			.onChange(this.updateColorVariable.bind(this))
+			.onChange(() => {
+				this.updateMaterial();
+				this.updateGeometry();
+			})
 			.name("Wireframe");
 		this.gui
 			.add(this, "draw_lines")
