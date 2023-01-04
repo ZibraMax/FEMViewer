@@ -19,6 +19,8 @@ import {
 	Quadrilateral,
 	Serendipity,
 	LinealO2,
+	max,
+	min,
 } from "./Elements.js";
 
 const style = getComputedStyle(document.body);
@@ -677,12 +679,12 @@ class FEMViewer {
 		this.camera.updateProjectionMatrix();
 	}
 	async renderMath() {
-		function f() {
-			renderMathInElement(document.body, {
-				throwOnError: false,
-			});
-		}
-		setTimeout(f, 100);
+		//function f() {
+		//	renderMathInElement(document.body, {
+		//		throwOnError: false,
+		//	});
+		//}
+		//setTimeout(f, 100);
 	}
 
 	updateMaterial() {
@@ -1074,7 +1076,7 @@ class FEMViewer {
 	}
 
 	parseJSON(jsondata) {
-		this.norm = 1.0 / math.max(jsondata["nodes"].flat());
+		this.norm = 1.0 / max(jsondata["nodes"].flat());
 		// console.log(norm);
 		this.nodes = [];
 		this.nodes = jsondata["nodes"];
@@ -1201,7 +1203,7 @@ class FEMViewer {
 		this.color_select_option = this.guifolder
 			.add(this, "colorOptions", {
 				"No color": "nocolor",
-				"\\(|U|\\)": "dispmag",
+				"|U|": "dispmag",
 				"Scaled Jacobian": "scaled_jac",
 				...dict,
 				...prop_dict,
@@ -1251,19 +1253,13 @@ class FEMViewer {
 			this.nodes.map((row) => row[colIndex])
 		);
 
-		let sizex =
-			math.max(secon_coords[0].flat()) - math.min(secon_coords[0].flat());
-		let sizey =
-			math.max(secon_coords[1].flat()) - math.min(secon_coords[1].flat());
-		let sizez =
-			math.max(secon_coords[2].flat()) - math.min(secon_coords[2].flat());
+		let sizex = max(secon_coords[0].flat()) - min(secon_coords[0].flat());
+		let sizey = max(secon_coords[1].flat()) - min(secon_coords[1].flat());
+		let sizez = max(secon_coords[2].flat()) - min(secon_coords[2].flat());
 
-		let centerx =
-			(math.max(secon_coords[0]) + math.min(secon_coords[0])) / 2;
-		let centery =
-			(math.max(secon_coords[1]) + math.min(secon_coords[1])) / 2;
-		let centerz =
-			(math.max(secon_coords[2]) + math.min(secon_coords[2])) / 2;
+		let centerx = (max(secon_coords[0]) + min(secon_coords[0])) / 2;
+		let centery = (max(secon_coords[1]) + min(secon_coords[1])) / 2;
+		let centerz = (max(secon_coords[2]) + min(secon_coords[2])) / 2;
 		this.center = [centerx, centery, centerz];
 		this.dimens = [sizex, sizey, sizez];
 		for (let i = 0; i < this.nodes.length; i++) {
@@ -1271,15 +1267,15 @@ class FEMViewer {
 			this.nodes[i][1] -= sizey / 2;
 			this.nodes[i][2] -= sizez / 2;
 		}
-		this.size = math.max(this.nodes.flat()) - math.min(this.nodes.flat());
+		this.size = max(this.nodes.flat()) - min(this.nodes.flat());
 	}
 	updateSolutionInfo() {
 		this.infoDetail = this.solutions_info[this.step][this.info];
 	}
 
 	updateDispSlider() {
-		const max_disp = math.max(this.U);
-		const min_disp = math.min(this.U);
+		const max_disp = max(this.U);
+		const min_disp = min(this.U);
 		this.max_abs_disp =
 			Math.max(Math.abs(max_disp), Math.abs(min_disp)) * this.norm;
 		if (this.config_dict["displacements"]) {

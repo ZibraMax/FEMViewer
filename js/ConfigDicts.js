@@ -7,12 +7,12 @@ const Elasticity = {
 	calculateStrain: true,
 	displacements: true,
 	dict: {
-		"\\(\\varepsilon_x\\)": 0,
-		"\\(\\varepsilon_y\\)": 1,
-		"\\(\\varepsilon_z\\)": 2,
-		"\\(\\varepsilon_{xy}\\)": 3,
-		"\\(\\varepsilon_{xz}\\)": 4,
-		"\\(\\varepsilon_{yz}\\)": 5,
+		εx: 0,
+		εy: 1,
+		εz: 2,
+		εxy: 3,
+		εxz: 4,
+		εyz: 5,
 	},
 	props: [],
 };
@@ -20,9 +20,9 @@ const PlaneStressSparse = {
 	calculateStrain: true,
 	displacements: true,
 	dict: {
-		"\\(\\varepsilon_x\\)": 0,
-		"\\(\\varepsilon_y\\)": 1,
-		"\\(\\varepsilon_{xy}\\)": 2,
+		εx: 0,
+		εy: 1,
+		εxy: 2,
 	},
 	props: ["E1", "E2", "G12", "v12", "t", "rho"],
 };
@@ -31,8 +31,8 @@ const Torsion2D = {
 	calculateStrain: false,
 	displacements: false,
 	dict: {
-		"dPHI/dx": [0, 0],
-		"dPHI/dy": [0, 1],
+		"dΨ/dx": [0, 0],
+		"dΨ/dy": [0, 1],
 	},
 	props: ["_phi", "G"],
 };
