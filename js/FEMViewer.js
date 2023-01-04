@@ -23,19 +23,18 @@ import {
 	min,
 } from "./Elements.js";
 
-const style = getComputedStyle(document.body);
-const TEXT_COLOR = style.getPropertyValue("--gui-text-color").trim();
-const BACKGROUND_COLOR = style
-	.getPropertyValue("--gui-background-color")
-	.trim();
-const TITLE_BACKGROUND_COLOR = style
+var style = getComputedStyle(document.body);
+var TEXT_COLOR = style.getPropertyValue("--gui-text-color").trim();
+var BACKGROUND_COLOR = style.getPropertyValue("--gui-background-color").trim();
+var TITLE_BACKGROUND_COLOR = style
 	.getPropertyValue("--gui-title-background-color")
 	.trim();
+var PLOT_GRID_COLOR = style.getPropertyValue("--plot-grid-color").trim();
+var FONT_FAMILY = style.getPropertyValue("--font-family").trim();
+var FOCUS_COLOR = style.getPropertyValue("--focus-color").trim();
+var LINES_COLOR = style.getPropertyValue("--gui-text-color").trim();
 
-const PLOT_GRID_COLOR = style.getPropertyValue("--plot-grid-color").trim();
-
-const FONT_FAMILY = style.getPropertyValue("--font-family").trim();
-const PLOT_STYLE = {
+var PLOT_STYLE = {
 	margin: { t: 0 },
 	paper_bgcolor: BACKGROUND_COLOR,
 	plot_bgcolor: BACKGROUND_COLOR,
@@ -50,9 +49,6 @@ const PLOT_STYLE = {
 		gridcolor: PLOT_GRID_COLOR,
 	},
 };
-
-const FOCUS_COLOR = style.getPropertyValue("--focus-color").trim();
-const LINES_COLOR = style.getPropertyValue("--lines-color").trim();
 
 const types = {
 	B1V: Brick,
@@ -75,27 +71,98 @@ function allowUpdate() {
 	});
 }
 
+const themes = {
+	Default: {},
+	"Transparent background": {
+		...{
+			"--gui-background-color": "#f6f6f6",
+			"--gui-text-color": "#3d3d3d",
+			"--gui-title-background-color": "#efefef",
+			"--gui-title-text-color": "#3d3d3d",
+			"--gui-widget-color": "#eaeaea",
+			"--gui-hover-color": "#f0f0f0",
+			"--gui-focus-color": "#fafafa",
+			"--gui-number-color": "#07aacf",
+			"--gui-string-color": "#8da300",
+			"--focus-color": "#dc2c41",
+		},
+		"--backbround-color": "transparent",
+	},
+	Light: {
+		"--gui-background-color": "#f6f6f6",
+		"--gui-text-color": "#3d3d3d",
+		"--gui-title-background-color": "#efefef",
+		"--gui-title-text-color": "#3d3d3d",
+		"--gui-widget-color": "#eaeaea",
+		"--gui-hover-color": "#f0f0f0",
+		"--gui-focus-color": "#fafafa",
+		"--gui-number-color": "#07aacf",
+		"--gui-string-color": "#8da300",
+		"--focus-color": "#dc2c41",
+	},
+	Dark: {
+		"--gui-background-color": "#1f1f1f",
+		"--gui-text-color": "#ebebeb",
+		"--gui-title-background-color": "#111111",
+		"--gui-title-text-color": "#ebebeb",
+		"--gui-widget-color": "#424242",
+		"--gui-hover-color": "#4f4f4f",
+		"--gui-focus-color": "#595959",
+		"--gui-number-color": "#2cc9ff",
+		"--gui-string-color": "#a2db3c",
+		"--focus-color": "var(--gui-focus-color)",
+		"--plot-grid-color": "#616161",
+	},
+	"Solarized Light": {
+		"--gui-background-color": "#fdf6e3",
+		"--gui-text-color": "#657b83",
+		"--gui-title-background-color": "#f5efdc",
+		"--gui-title-text-color": "#657b83",
+		"--gui-widget-color": "#eee8d5",
+		"--gui-hover-color": "#e7e1cf",
+		"--gui-focus-color": "#e6ddc7",
+		"--gui-number-color": "#2aa0f3",
+		"--gui-string-color": "#97ad00",
+		"--focus-color": "var(--gui-focus-color)",
+	},
+	"Solarized Dark": {
+		"--gui-background-color": "#002b36",
+		"--gui-text-color": "#b2c2c2",
+		"--gui-title-background-color": "#001f27",
+		"--gui-title-text-color": "#b2c2c2",
+		"--gui-widget-color": "#094e5f",
+		"--gui-hover-color": "#0a6277",
+		"--gui-focus-color": "#0b6c84",
+		"--gui-number-color": "#2aa0f2",
+		"--gui-string-color": "#97ad00",
+		"--focus-color": "var(--gui-focus-color)",
+		"--plot-grid-color": "#616161",
+	},
+	Tennis: {
+		"--gui-background-color": "#32405e",
+		"--gui-text-color": "#ebe193",
+		"--gui-title-background-color": "#713154",
+		"--gui-title-text-color": "#ffffff",
+		"--gui-widget-color": "#057170",
+		"--gui-hover-color": "#057170",
+		"--gui-focus-color": "#b74f88",
+		"--gui-number-color": "#ddfcff",
+		"--gui-string-color": "#ffbf00",
+		"--focus-color": "var(--gui-focus-color)",
+		"--plot-grid-color": "#616161",
+	},
+};
+
+const styleElement = document.createElement("style");
+document.body.appendChild(styleElement);
+
 class FEMViewer {
-	json_path;
-	nodes;
-	nvn;
-	dictionary;
-	types;
-	solutions;
-	U;
-	step;
-	max_disp;
-	size;
-	elements;
-	canvas;
-	camera;
-	scene;
-	controls;
 	constructor(canvas, magnif, rot, axis = false, iz = 1.05) {
 		if (!magnif) {
 			magnif = 0;
 		}
 		// FEM
+		this.theme = themes["Default"];
 		this.element_views = new Set();
 		this.refreshing = true;
 		this.wireframe = false;
@@ -172,6 +239,59 @@ class FEMViewer {
 		this.settings();
 		this.clickMode = "Inspect element";
 	}
+	updateStylesheet() {
+		let style = "";
+		const stylesheet = this.theme;
+		for (let prop in stylesheet) {
+			const value = stylesheet[prop];
+			style += `\t${prop}: ${value};\n`;
+		}
+		if (style) {
+			style = ":root {\n" + style + "}";
+			styleElement.innerHTML = style;
+		} else {
+			styleElement.innerHTML = "";
+		}
+	}
+
+	updateColors() {
+		style = getComputedStyle(document.body);
+		TEXT_COLOR = style.getPropertyValue("--gui-text-color").trim();
+		BACKGROUND_COLOR = style
+			.getPropertyValue("--gui-background-color")
+			.trim();
+		TITLE_BACKGROUND_COLOR = style
+			.getPropertyValue("--gui-title-background-color")
+			.trim();
+		PLOT_GRID_COLOR = style.getPropertyValue("--plot-grid-color").trim();
+		FONT_FAMILY = style.getPropertyValue("--font-family").trim();
+		FOCUS_COLOR = style.getPropertyValue("--focus-color").trim();
+		LINES_COLOR = style.getPropertyValue("--gui-text-color").trim();
+
+		PLOT_STYLE = {
+			margin: { t: 0 },
+			paper_bgcolor: BACKGROUND_COLOR,
+			plot_bgcolor: BACKGROUND_COLOR,
+			font: {
+				color: TEXT_COLOR,
+				family: FONT_FAMILY,
+			},
+			xaxis: {
+				gridcolor: PLOT_GRID_COLOR,
+			},
+			yaxis: {
+				gridcolor: PLOT_GRID_COLOR,
+			},
+		};
+	}
+
+	updateTheme() {
+		this.updateStylesheet();
+		this.updateColors();
+		this.updateMaterial();
+		this.updateGeometry();
+	}
+
 	updateResolution() {
 		for (const e of this.elements) {
 			e.res = this.resolution;
@@ -466,11 +586,6 @@ class FEMViewer {
 		this.guiSettingsBasic();
 	}
 	guiSettingsBasic() {
-		this.gui
-			.add(this, "filename")
-			.name("Filename")
-			.listen()
-			.onChange(this.reload.bind(this));
 		this.gui.add(this, "modalManager").name("Load JSON File");
 		this.gui.add(this, "modalManager2").name("Show properties histogram");
 		this.gui
@@ -512,6 +627,11 @@ class FEMViewer {
 			.listen()
 			.onChange(this.updateResolution.bind(this))
 			.name("LOD ⚠️ (expensive)");
+		this.gui
+			.add(this, "theme", themes)
+			.name("Theme")
+			.listen()
+			.onChange(this.updateTheme.bind(this));
 	}
 	toogleSolutionAsDisp() {
 		this.config_dict["displacements"] = this.solution_as_displacement;
@@ -704,6 +824,10 @@ class FEMViewer {
 			this.light2.intensity = 0.0;
 			this.light.intensity = 1.0;
 		}
+		this.line_material = new THREE.LineBasicMaterial({
+			color: LINES_COLOR,
+			linewidth: 3,
+		});
 	}
 
 	handleVisibilityChange(e) {
@@ -787,6 +911,8 @@ class FEMViewer {
 				false
 			);
 			this.contour.geometry = this.mergedLineGeometry;
+			this.contour.material = this.line_material;
+			this.contour.material.needsUpdate = true;
 		}
 		for (const ev of this.element_views) {
 			ev.updateGeometry();
@@ -939,10 +1065,6 @@ class FEMViewer {
 		DIV.innerHTML = "Creating materials..." + "⌛";
 		await allowUpdate();
 		this.updateMaterial();
-		this.line_material = new THREE.LineBasicMaterial({
-			color: LINES_COLOR,
-			linewidth: 3,
-		});
 		this.mergedLineGeometry = BufferGeometryUtils.mergeBufferGeometries(
 			this.bufferLines,
 			true
@@ -1446,4 +1568,4 @@ class FEMViewer {
 		}
 	}
 }
-export { FEMViewer };
+export { FEMViewer, themes };

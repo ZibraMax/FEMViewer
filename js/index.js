@@ -1,4 +1,4 @@
-import { FEMViewer } from "./FEMViewer.js";
+import { FEMViewer, themes } from "./FEMViewer.js";
 let magnif = 0;
 let rot = false;
 let mode = 0;
@@ -9,6 +9,7 @@ let lines = true;
 let path_str = "2D_I_SHAPE";
 let queryString = window.location.search;
 let vis_param = 0;
+let theme = "Default";
 if (queryString != "") {
 	queryString = queryString.split("?")[1];
 	let parametros = new URLSearchParams(queryString);
@@ -19,6 +20,7 @@ if (queryString != "") {
 	let axis_param = parametros.get("axis");
 	let zoom_param = parametros.get("zoom");
 	let lines_param = parametros.get("lines");
+	theme = parametros.get("theme");
 	vis_param = parametros.get("menu");
 	if (funcion_param) {
 		path_str = funcion_param;
@@ -59,6 +61,10 @@ if (path_str.startsWith("https://")) {
 const canvas = document.getElementById("model-view");
 
 const O = new FEMViewer(canvas, magnif, rot, axis == 1, zoom);
+O.theme = themes[theme] || {};
+O.updateStylesheet();
+O.updateColors();
+O.updateMaterial();
 O.draw_lines = lines;
 await O.loadJSON(path);
 O.step = mode;
