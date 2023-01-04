@@ -72,7 +72,9 @@ function allowUpdate() {
 }
 
 const themes = {
-	Default: {},
+	Default: {
+		emmisive: true,
+	},
 	"Transparent background": {
 		...{
 			"--gui-background-color": "#f6f6f6",
@@ -87,6 +89,7 @@ const themes = {
 			"--focus-color": "#dc2c41",
 		},
 		"--backbround-color": "transparent",
+		emmisive: true,
 	},
 	Light: {
 		"--gui-background-color": "#f6f6f6",
@@ -99,6 +102,7 @@ const themes = {
 		"--gui-number-color": "#07aacf",
 		"--gui-string-color": "#8da300",
 		"--focus-color": "#dc2c41",
+		emmisive: true,
 	},
 	Dark: {
 		"--gui-background-color": "#1f1f1f",
@@ -816,13 +820,22 @@ class FEMViewer {
 			this.light2.intensity = 1.0;
 			this.light.intensity = 0.0;
 		} else {
-			this.material = new THREE.MeshLambertMaterial({
-				color: FOCUS_COLOR,
-				emissive: FOCUS_COLOR,
-				wireframe: this.wireframe,
-			});
-			this.light2.intensity = 0.0;
-			this.light.intensity = 1.0;
+			if (this.theme["emmisive"]) {
+				this.material = new THREE.MeshLambertMaterial({
+					color: FOCUS_COLOR,
+					emissive: FOCUS_COLOR,
+					wireframe: this.wireframe,
+				});
+				this.light2.intensity = 0.0;
+				this.light.intensity = 1.0;
+			} else {
+				this.material = new THREE.MeshBasicMaterial({
+					color: FOCUS_COLOR,
+					wireframe: this.wireframe,
+				});
+				this.light2.intensity = 1.0;
+				this.light.intensity = 0.0;
+			}
 		}
 		this.line_material = new THREE.LineBasicMaterial({
 			color: LINES_COLOR,
@@ -1048,6 +1061,7 @@ class FEMViewer {
 		} else {
 			this.model.remove(this.contour);
 		}
+		this.updateGeometry();
 	}
 
 	async init(animate = true) {
