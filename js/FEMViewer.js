@@ -72,9 +72,7 @@ function allowUpdate() {
 }
 
 const themes = {
-	Default: {
-		emmisive: true,
-	},
+	Default: {},
 	"Transparent background": {
 		...{
 			"--gui-background-color": "#f6f6f6",
@@ -703,7 +701,7 @@ class FEMViewer {
 			.onChange(this.updateResolution.bind(this))
 			.name("LOD ⚠️ (expensive)");
 		this.settingsFolder
-			.add(this, "theme", themes)
+			.add(this, "theme", themes, "Default")
 			.name("Theme")
 			.listen()
 			.onChange(this.updateTheme.bind(this));

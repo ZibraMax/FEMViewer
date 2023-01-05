@@ -63,15 +63,12 @@ O.draw_lines = lines;
 await O.loadJSON(path);
 O.step = mode;
 await O.init();
-
-const gui = document.querySelector(".root");
-
-if (!vis_param) {
-	gui.classList.add("alwaysOpen");
+if (vis_param == 1) {
+	O.menuCerrado = false;
+	O.updateMenuCerrado();
 }
 
 const file_input = document.getElementById("json-file-input");
-
 function openFiles(evt) {
 	document.getElementById("loader").style.display = "";
 	var files = evt.target.files;
