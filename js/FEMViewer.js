@@ -165,8 +165,8 @@ function allowUpdate() {
 
 function activateModal(id) {
 	var modal = document.getElementById(id);
-	var span = document.getElementsByClassName("close")[0];
-	modal.style.display = "block";
+	var span = modal.getElementsByClassName("close")[0];
+	modal.style.display = "table";
 	span.onclick = function () {
 		modal.style.display = "none";
 	};
@@ -430,7 +430,7 @@ class FEMViewer {
 			};
 			data.push(trace);
 		}
-		Plotly.newPlot(this.histogram, data, PLOT_STYLE);
+		Plotly.newPlot(this.histogram, data, PLOT_STYLE, { responsive: true });
 	}
 	createHistogram2() {
 		let data = [];
@@ -445,7 +445,7 @@ class FEMViewer {
 			},
 		};
 		data.push(trace);
-		Plotly.newPlot(this.histogram, data, PLOT_STYLE);
+		Plotly.newPlot(this.histogram, data, PLOT_STYLE, { responsive: true });
 	}
 
 	testNeighborg(ide1, ide2) {
@@ -674,7 +674,8 @@ class FEMViewer {
 			maxFilesize: 50,
 			autoQueue: false,
 			acceptedFiles: ".json",
-			dictDefaultMessage: "Drop JSON file here!",
+			dictDefaultMessage:
+				"Drop JSON file here! (click to select from storage)",
 			accept: function (file, done) {
 				var reader = new FileReader();
 				reader.addEventListener("loadend", function (event) {
@@ -758,6 +759,13 @@ class FEMViewer {
 			.name("Theme")
 			.listen()
 			.onChange(this.updateTheme.bind(this));
+		if (this.example_file_paths) {
+			this.settingsFolder
+				.add(this, "filename", this.example_file_paths)
+				.name("Examples")
+				.listen()
+				.onChange(this.changeExample.bind(this));
+		}
 	}
 	toogleSolutionAsDisp() {
 		this.config_dict["displacements"] = this.solution_as_displacement;
@@ -1128,8 +1136,9 @@ class FEMViewer {
 	}
 
 	addExamples(file_paths) {
+		this.example_file_paths = file_paths;
 		this.settingsFolder
-			.add(this, "filename", file_paths)
+			.add(this, "filename", this.example_file_paths)
 			.name("Examples")
 			.listen()
 			.onChange(this.changeExample.bind(this));
