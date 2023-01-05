@@ -22,6 +22,12 @@ import {
 	max,
 	min,
 } from "./Elements.js";
+import { NotificationBar } from "./NotificationBar.js";
+function allowUpdate() {
+	return new Promise((f) => {
+		setTimeout(f, 0);
+	});
+}
 
 var style = getComputedStyle(document.body);
 var TEXT_COLOR = style.getPropertyValue("--gui-text-color").trim();
@@ -62,8 +68,6 @@ const types = {
 	C2V: Serendipity,
 	L2V: LinealO2,
 };
-
-const DIV = document.getElementById("status-bar");
 
 const loader = document.createElement("div");
 loader.setAttribute("id", "loader");
@@ -157,12 +161,6 @@ document.body.appendChild(styleElement);
 
 var GOBAL_DRAG = false;
 
-function allowUpdate() {
-	return new Promise((f) => {
-		setTimeout(f, 0);
-	});
-}
-
 function activateModal(id) {
 	var modal = document.getElementById(id);
 	var span = modal.getElementsByClassName("close")[0];
@@ -203,6 +201,7 @@ class FEMViewer {
 		this.min_color_value_slider = undefined;
 		this.resource_tracker = new ResourceTracker();
 		this.raycaster = new THREE.Raycaster();
+		this.notiBar = new NotificationBar(document.body);
 
 		this.before_load = () => {
 			loader.style.display = "";
@@ -297,11 +296,11 @@ class FEMViewer {
 			this.handleVisibilityChange(e)
 		);
 
-		const playButton = document.getElementById("play-button");
-		playButton.addEventListener("click", this.toogleRefresh.bind(this));
-
-		const resetButton = document.getElementById("reload-button");
-		resetButton.addEventListener("click", this.reload.bind(this));
+		this.notiBar.addButton("fa fa-refresh", this.reload.bind(this));
+		this.playButton = this.notiBar.addButton(
+			"fa fa-pause",
+			this.toogleRefresh.bind(this)
+		);
 
 		this.canvas.addEventListener("mousedown", () => (GOBAL_DRAG = false));
 		this.canvas.addEventListener("mousemove", () => (GOBAL_DRAG = true));
@@ -385,12 +384,17 @@ class FEMViewer {
 		this.updateSolution();
 	}
 	updateRefresh() {
-		const playButton = document.getElementById("play-button");
 		this.controls.enabled = this.refreshing;
 		if (this.refreshing) {
-			playButton.setAttribute("class", "fa fa-pause notification-action");
+			this.playButton.setAttribute(
+				"class",
+				"fa fa-pause notification-action"
+			);
 		} else {
-			playButton.setAttribute("class", "fa fa-play notification-action");
+			this.playButton.setAttribute(
+				"class",
+				"fa fa-play notification-action"
+			);
 		}
 	}
 	toogleRefresh() {
@@ -493,7 +497,7 @@ class FEMViewer {
 	}
 
 	async createOctree() {
-		DIV.innerHTML = "Creating Oct Tree... ⌛";
+		this.notiBar.setMessage("Creating Oct Tree... ⌛");
 		let bounding = new Quadrant3D(this.center, this.dimens);
 		this.OctTree = new Geometree(bounding);
 		let times = 0;
@@ -503,11 +507,7 @@ class FEMViewer {
 			let percentage = (i / this.elements.length) * 100;
 			if (percentage > times) {
 				times += 10;
-				DIV.innerHTML =
-					"Creating Oct Tree  " +
-					'<progress value="' +
-					percentage +
-					'" max="100"> any% </progress>';
+				this.notiBar.setProgressBar("Creating Oct Tree", percentage);
 				await allowUpdate();
 			}
 		}
@@ -562,7 +562,7 @@ class FEMViewer {
 	}
 
 	async loadJSON(json_path, be) {
-		DIV.innerHTML = "Loading model..." + "⌛";
+		this.notiBar.setMessage("Loading model..." + "⌛", true);
 		this.json_path = json_path;
 		this.filename = json_path;
 		const response = await fetch(this.json_path);
@@ -571,7 +571,7 @@ class FEMViewer {
 			jsondata["border_elements"] = be;
 		}
 		this.parseJSON(jsondata);
-		DIV.innerHTML = "Ready!";
+		this.notiBar.resetMessage();
 	}
 	reset() {
 		this.solution_as_displacement = false;
@@ -816,12 +816,13 @@ class FEMViewer {
 				.name("Animation")
 				.listen()
 				.onChange(() => {
-					DIV.innerHTML = "Animation running!";
+					this.notiBar.setMessage("Animation running!");
+
 					if (!this.animate) {
 						this.mult = 1.0;
 						this.updateMeshCoords();
 						this.updateGeometry();
-						DIV.innerHTML = "Ready!";
+						this.notiBar.resetMessage();
 					}
 				});
 			this.magnifSlider = this.disp_gui_disp_folder
@@ -841,9 +842,9 @@ class FEMViewer {
 		this.animate = false;
 		this.reset();
 		this.before_load();
-		DIV.innerHTML = "Reloading model..." + "⌛";
+		this.notiBar.setMessage("Reloading model..." + "⌛");
 		await this.loadJSON(this.filename);
-		DIV.innerHTML = "Ready!";
+		this.notiBar.resetMessage();
 		this.init(false);
 		this.after_load();
 	}
@@ -851,10 +852,10 @@ class FEMViewer {
 	updateBorderElements(be) {
 		this.reset();
 		this.before_load();
-		DIV.innerHTML = "Reloading model..." + "⌛";
+		this.notiBar.setMessage("Reloading model..." + "⌛");
 		const resp = this.loadJSON(this.filename, be);
 		resp.then(() => {
-			DIV.innerHTML = "Ready!";
+			this.notiBar.resetMessage();
 			this.init(false);
 			this.after_load();
 		});
@@ -924,7 +925,7 @@ class FEMViewer {
 		}
 
 		msg += " Max=" + max_str + " Min=" + min_str;
-		DIV.innerHTML = msg;
+		this.notiBar.setMessage(msg);
 		this.updateLut();
 	}
 	updateCamera() {
@@ -1256,7 +1257,7 @@ class FEMViewer {
 			this.bufferGeometries,
 			true
 		);
-		DIV.innerHTML = "Creating materials..." + "⌛";
+		this.notiBar.setMessage("Creating materials..." + "⌛");
 		await allowUpdate();
 		this.updateMaterial();
 		this.mergedLineGeometry = BufferGeometryUtils.mergeBufferGeometries(
@@ -1270,8 +1271,9 @@ class FEMViewer {
 		// this.model.add(this.contour);
 
 		this.mesh = new THREE.Mesh(this.mergedGeometry, this.material);
-		DIV.innerHTML = "Adding mesh..." + "⌛";
+		this.notiBar.setMessage("Adding mesh..." + "⌛");
 		await allowUpdate();
+
 		this.updateU();
 		this.model.add(this.mesh);
 
@@ -1292,14 +1294,14 @@ class FEMViewer {
 		this.renderer.render(this.scene, this.camera);
 		this.zoomExtents();
 
-		DIV.innerHTML = "Drawing model..." + "⌛";
-		await allowUpdate();
-		DIV.innerHTML = "Done!";
+		this.notiBar.setMessage("Drawing model..." + "⌛");
 		await allowUpdate();
 		this.calculate_jacobians_worker();
+		this.notiBar.setMessage("Done!");
+		await allowUpdate();
 	}
 	calculate_jacobians_worker() {
-		DIV.innerHTML = "Calculating jacobians..." + "⌛";
+		this.notiBar.setMessage("Calculating jacobians..." + "⌛");
 		let OBJ = this;
 		const myWorker = new Worker("./js/worker_jacobianos.js", {
 			type: "module",
@@ -1308,20 +1310,15 @@ class FEMViewer {
 
 		myWorker.onmessage = function (msg) {
 			if (msg.data[0] == "MSG") {
-				DIV.innerHTML =
-					"Calculating jacobians " +
-					'<progress value="' +
-					msg.data[1] +
-					'" max="100"> any% </progress>';
+				OBJ.notiBar.setProgressBar(
+					"Calculating jacobians",
+					msg.data[1]
+				);
 			} else {
 				for (let i = 0; i < OBJ.elements.length; i++) {
 					OBJ.elements[i].scaledJacobian = msg.data[i];
 				}
-				DIV.innerHTML = "Jacobians calculated successfully!";
-
-				setTimeout(() => {
-					DIV.innerHTML = "Ready!";
-				}, 1500);
+				OBJ.notiBar.sendMessage("Jacobians calculated successfully!");
 			}
 		};
 	}
@@ -1350,7 +1347,7 @@ class FEMViewer {
 				}
 			}
 			e.innerHTML = e.innerHTML + "⌛";
-			DIV.innerHTML = "Border elements started..." + "⌛";
+			this.notiBar.setMessage("Border elements started..." + "⌛");
 			let OBJ = this;
 			const myWorker = new Worker("./js/worker_border_elements.js", {
 				type: "module",
@@ -1363,24 +1360,19 @@ class FEMViewer {
 
 			myWorker.onmessage = function (msg) {
 				if (msg.data[0] == "MSG") {
-					DIV.innerHTML = msg.data[1];
+					this.notiBar.setMessage(msg.data[1]);
 				} else {
 					const be = msg.data;
 					OBJ.updateBorderElements(be);
 					const original = "Detect border elements";
 					e.innerHTML = original;
-					DIV.innerHTML = "Border elements finished!";
-					setTimeout(() => {
-						DIV.innerHTML = "Ready!";
-					}, 1500);
+					this.notiBar.sendMessage("Border elements finished!");
 				}
 			};
 		} else {
-			DIV.innerHTML =
-				"Border element detection only avaliable in 3D geometry";
-			setTimeout(() => {
-				DIV.innerHTML = "Ready!";
-			}, 5000);
+			this.notiBar.sendMessage(
+				"Border element detection only avaliable in 3D geometry"
+			);
 		}
 	}
 	setStep(step) {
@@ -1641,11 +1633,7 @@ class FEMViewer {
 			let percentage = (i / this.dictionary.length) * 100;
 			if (percentage > times) {
 				times += 1;
-				DIV.innerHTML =
-					"Loading model " +
-					'<progress value="' +
-					percentage +
-					'" max="100"> any% </progress>';
+				this.notiBar.setProgressBar("Loading model", percentage);
 				await allowUpdate();
 			}
 		}
