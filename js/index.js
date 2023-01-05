@@ -68,41 +68,8 @@ if (vis_param == 1) {
 	O.updateMenuCerrado();
 }
 
-const file_input = document.getElementById("json-file-input");
-function openFiles(evt) {
-	document.getElementById("loader").style.display = "";
-	var files = evt.target.files;
-
-	for (var i = 0, len = files.length; i < len; i++) {
-		var file = files[i];
-
-		var reader = new FileReader();
-
-		reader.onload = (function (f) {
-			return function (e) {
-				const json_txt = e.target.result;
-				const jsondata = JSON.parse(json_txt);
-
-				O.reset();
-				O.parseJSON(jsondata);
-				O.init(false);
-				document.getElementById("loader").style.display = "none";
-			};
-		})(file);
-
-		reader.readAsText(file);
-	}
-}
-file_input.addEventListener("change", openFiles);
 console.log(O);
-function showPage() {
-	document.getElementById("loader").style.display = "none";
-}
-function beforeLoad() {
-	document.getElementById("loader").style.display = "";
-}
-showPage();
-
+O.after_load();
 async function getFiles(paths) {
 	const file_paths = [];
 	for (const path of paths) {
@@ -127,15 +94,9 @@ async function getFiles(paths) {
 			}
 		}
 	}
-	O.addExamples(file_paths, beforeLoad, showPage);
+	O.addExamples(file_paths);
 }
 getFiles([
 	"https://api.github.com/repos/ZibraMax/FEM/git/trees/master?recursive=1",
 	"https://api.github.com/repos/ZibraMax/FEMViewer/git/trees/main?recursive=1",
 ]);
-let drag = false;
-canvas.addEventListener("mousedown", () => (drag = false));
-canvas.addEventListener("mousemove", () => (drag = true));
-canvas.addEventListener("mouseup", (e) => {
-	drag ? "drag" : O.onDocumentMouseDown(e);
-});

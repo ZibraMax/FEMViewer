@@ -65,12 +65,9 @@ const types = {
 
 const DIV = document.getElementById("status-bar");
 
-function allowUpdate() {
-	return new Promise((f) => {
-		setTimeout(f, 0);
-	});
-}
-
+const loader = document.createElement("div");
+loader.setAttribute("id", "loader");
+document.body.appendChild(loader);
 const themes = {
 	Default: {},
 	"Transparent background": {
@@ -158,6 +155,30 @@ const themes = {
 const styleElement = document.createElement("style");
 document.body.appendChild(styleElement);
 
+var GOBAL_DRAG = false;
+
+function allowUpdate() {
+	return new Promise((f) => {
+		setTimeout(f, 0);
+	});
+}
+
+function activateModal(id) {
+	var modal = document.getElementById(id);
+	var span = document.getElementsByClassName("close")[0];
+	modal.style.display = "block";
+	span.onclick = function () {
+		modal.style.display = "none";
+	};
+	window.onclick = function (event) {
+		if (event.target == modal) {
+			modal.style.display = "none";
+		}
+	};
+}
+
+Dropzone.autoDiscover = false;
+
 class FEMViewer {
 	constructor(canvas, magnif, rot, axis = false, iz = 1.05) {
 		if (!magnif) {
@@ -183,8 +204,12 @@ class FEMViewer {
 		this.resource_tracker = new ResourceTracker();
 		this.raycaster = new THREE.Raycaster();
 
-		this.before_load = () => {};
-		this.after_load = () => {};
+		this.before_load = () => {
+			loader.style.display = "";
+		};
+		this.after_load = () => {
+			loader.style.display = "none";
+		};
 		this.rot = rot;
 		this.resolution = 1;
 		this.nodes = [];
@@ -273,13 +298,15 @@ class FEMViewer {
 		);
 
 		const playButton = document.getElementById("play-button");
-		playButton.addEventListener("click", () => {
-			const response = this.toogleRefresh();
-		});
+		playButton.addEventListener("click", this.toogleRefresh.bind(this));
 
 		const resetButton = document.getElementById("reload-button");
-		resetButton.addEventListener("click", () => {
-			const response = this.reload();
+		resetButton.addEventListener("click", this.reload.bind(this));
+
+		this.canvas.addEventListener("mousedown", () => (GOBAL_DRAG = false));
+		this.canvas.addEventListener("mousemove", () => (GOBAL_DRAG = true));
+		this.canvas.addEventListener("mouseup", (e) => {
+			GOBAL_DRAG ? "drag" : this.onDocumentMouseDown(e);
 		});
 	}
 
@@ -640,6 +667,32 @@ class FEMViewer {
 
 		this.gh = new AxisGridHelper(this.scene, 0);
 		this.gh.visible = this.axis;
+
+		let O = this;
+		this.dropzone = new Dropzone("form#json-file-input", {
+			paramName: "file",
+			maxFilesize: 50,
+			autoQueue: false,
+			acceptedFiles: ".json",
+			dictDefaultMessage: "Drop JSON file here!",
+			accept: function (file, done) {
+				var reader = new FileReader();
+				reader.addEventListener("loadend", function (event) {
+					const json_txt = event.target.result;
+					const jsondata = JSON.parse(json_txt);
+					O.reset();
+					O.parseJSON(jsondata);
+					O.init(false);
+					O.after_load();
+					O.dropzone.emit("success", file, "success", null);
+					O.dropzone.emit("complete", file);
+					O.dropzone.removeAllFiles();
+				});
+				reader.readAsText(file);
+				done();
+				document.getElementById("myModal").style.display = "none";
+			},
+		});
 		//this.guiSettingsBasic();
 	}
 	guiSettingsBasic() {
@@ -774,19 +827,17 @@ class FEMViewer {
 		}
 	}
 
-	reload() {
+	async reload() {
 		cancelAnimationFrame(this.animationFrameID);
 
 		this.animate = false;
 		this.reset();
 		this.before_load();
 		DIV.innerHTML = "Reloading model..." + "⌛";
-		const resp = this.loadJSON(this.filename);
-		resp.then(() => {
-			DIV.innerHTML = "Ready!";
-			this.init(false);
-			this.after_load();
-		});
+		await this.loadJSON(this.filename);
+		DIV.innerHTML = "Ready!";
+		this.init(false);
+		this.after_load();
 	}
 
 	updateBorderElements(be) {
@@ -1076,9 +1127,7 @@ class FEMViewer {
 		}
 	}
 
-	addExamples(file_paths, b, a) {
-		this.before_load = b;
-		this.after_load = a;
+	addExamples(file_paths) {
 		this.settingsFolder
 			.add(this, "filename", file_paths)
 			.name("Examples")
@@ -1437,7 +1486,6 @@ class FEMViewer {
 				};
 			}
 		}
-		console.log(this.config_dict);
 		this.prop_dict = {};
 		for (const p of this.config_dict["props"]) {
 			this.prop_dict[p] = ["PROP", jsondata["properties"][p]];

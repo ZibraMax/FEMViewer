@@ -306,3 +306,22 @@ progress {
 	background: var(--focus-color); /* Green background */
 	cursor: pointer; /* Cursor on hover */
 }
+
+.dropzone {
+	width: 30%;
+	min-width: 300px;
+	border-radius: 6px;
+	border: solid var(--gui-title-background-color) !important;
+	background: var(--gui-background-color) !important;
+}
+.dropzone:hover {
+	border: solid var(--gui-text-color) !important;
+	background: var(--gui-title-background-color) !important;
+}
+.dropzone-container {
+	text-align: center;
+	align-items: center;
+}
+form {
+	display: inline-block;
+}

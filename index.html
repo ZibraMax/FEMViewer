@@ -89,13 +89,26 @@
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
 		/>
 		<script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
+		<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+		<link
+			rel="stylesheet"
+			href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css"
+			type="text/css"
+		/>
 	</head>
 	<body>
 		<div id="myModal" class="modal">
 			<!-- Modal content -->
 			<div class="modal-content">
 				<span class="close">&times;</span>
-				<input type="file" name="file" id="json-file-input" />
+				<div class="dropzone-container">
+					<form
+						id="json-file-input"
+						class="dropzone"
+						action="/"
+						method="post"
+					></form>
+				</div>
 			</div>
 		</div>
 
@@ -107,7 +120,6 @@
 			</div>
 		</div>
 
-		<div id="loader"></div>
 		<div id="models-container" class="box animate-bottom">
 			<canvas
 				class="box side-pane"
@@ -143,20 +155,5 @@
 		</div>
 		<script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
 		<script src="./js/index.js" type="module"></script>
-		<script>
-			function activateModal(id) {
-				var modal = document.getElementById(id);
-				var span = document.getElementsByClassName("close")[0];
-				modal.style.display = "block";
-				span.onclick = function () {
-					modal.style.display = "none";
-				};
-				window.onclick = function (event) {
-					if (event.target == modal) {
-						modal.style.display = "none";
-					}
-				};
-			}
-		</script>
 	</body>
 </html>
