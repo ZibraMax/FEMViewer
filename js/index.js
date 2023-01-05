@@ -47,12 +47,6 @@ if (queryString != "") {
 	}
 }
 
-if (vis_param) {
-	document
-		.getElementById("notification-container")
-		.setAttribute("style", "visibility: hidden");
-}
-
 let path = `./resources/${path_str}.json`;
 if (path_str.startsWith("https://")) {
 	path = path_str;
@@ -70,9 +64,6 @@ await O.loadJSON(path);
 O.step = mode;
 await O.init();
 
-document.addEventListener("visibilitychange", (e) =>
-	O.handleVisibilityChange(e)
-);
 const gui = document.querySelector(".root");
 
 if (!vis_param) {
@@ -113,16 +104,7 @@ function showPage() {
 function beforeLoad() {
 	document.getElementById("loader").style.display = "";
 }
-function onDocumentKeyDown(event) {
-	const keyCode = event.which;
-	if (keyCode == 39) {
-		O.nextSolution();
-	} else if (keyCode == 37) {
-		O.prevSolution();
-	}
-}
 showPage();
-document.addEventListener("keydown", onDocumentKeyDown, false);
 
 async function getFiles(paths) {
 	const file_paths = [];
@@ -159,20 +141,4 @@ canvas.addEventListener("mousedown", () => (drag = false));
 canvas.addEventListener("mousemove", () => (drag = true));
 canvas.addEventListener("mouseup", (e) => {
 	drag ? "drag" : O.onDocumentMouseDown(e);
-});
-
-const playButton = document.getElementById("play-button");
-playButton.addEventListener("click", () => {
-	const response = O.toogleRefresh();
-});
-
-const resetButton = document.getElementById("reload-button");
-resetButton.addEventListener("click", () => {
-	const response = O.reload();
-});
-
-// Make the DIV element draggable:
-//dragElement(document.getElementById("element-view-container"));
-window.addEventListener("resize", (event) => {
-	O.render();
 });

@@ -233,16 +233,71 @@ class FEMViewer {
 		this.draw_lines = true;
 		this.colormap = "rainbow";
 
+		this.menuCerrado = true;
+
 		this.lut = new Lut(this.colormap);
 		this.filename = "";
 
-		this.gui = new GUI({ title: "Settings" });
+		this.gui = new GUI({ title: "Menu" });
 		this.gui.close();
 		this.loaded = false;
 		this.colorOptions = "nocolor";
-		this.settings();
 		this.clickMode = "Inspect element";
+		this.settings();
+		this.createListeners();
 	}
+
+	onDocumentKeyDown(event) {
+		const keyCode = event.which;
+		if (keyCode == 39) {
+			this.nextSolution();
+		} else if (keyCode == 37) {
+			this.prevSolution();
+		} else if (keyCode == 27) {
+			this.destroy_element_views();
+		} else if (keyCode == 77) {
+			this.menuCerrado = !this.menuCerrado;
+			this.updateMenuCerrado();
+		}
+	}
+
+	createListeners() {
+		document.addEventListener(
+			"keydown",
+			this.onDocumentKeyDown.bind(this),
+			false
+		);
+
+		window.addEventListener("resize", this.render.bind(this));
+
+		document.addEventListener("visibilitychange", (e) =>
+			this.handleVisibilityChange(e)
+		);
+
+		const playButton = document.getElementById("play-button");
+		playButton.addEventListener("click", () => {
+			const response = this.toogleRefresh();
+		});
+
+		const resetButton = document.getElementById("reload-button");
+		resetButton.addEventListener("click", () => {
+			const response = this.reload();
+		});
+	}
+
+	updateMenuCerrado() {
+		this.gui.show(this.menuCerrado);
+		if (this.menuCerrado) {
+			document
+				.getElementById("notification-container")
+				.setAttribute("style", "");
+		} else {
+			document
+				.getElementById("notification-container")
+				.setAttribute("style", "visibility: hidden");
+		}
+	}
+
 	updateStylesheet() {
 		let style = "";
 		const stylesheet = this.theme;
@@ -342,9 +397,9 @@ class FEMViewer {
 	}
 	createHistogram() {
 		let data = [];
-		for (const p of Object.keys(this.element_properties)) {
+		for (const p of Object.keys(this.prop_dict)) {
 			let trace = {
-				x: this.element_properties[p],
+				x: this.prop_dict[p][1],
 				type: "histogram",
 				name: p,
 			};
@@ -587,22 +642,30 @@ class FEMViewer {
 
 		this.gh = new AxisGridHelper(this.scene, 0);
 		this.gh.visible = this.axis;
-		this.guiSettingsBasic();
+		//this.guiSettingsBasic();
 	}
 	guiSettingsBasic() {
-		this.gui.add(this, "modalManager").name("Load JSON File");
-		this.gui.add(this, "modalManager2").name("Show properties histogram");
-		this.gui
+		if (this.settingsFolder) {
+			this.settingsFolder.destroy();
+		}
+		this.settingsFolder = this.gui.addFolder("Settings");
+		this.settingsFolder.add(this, "modalManager").name("Load JSON File");
+		this.settingsFolder
+			.add(this, "modalManager2")
+			.name("Show properties histogram");
+		this.settingsFolder
 			.add(this, "modalManager3")
 			.name("Show scaled jacobian histogram");
-		this.gui
+		this.settingsFolder
 			.add(this, "detectBorderElements2")
 			.name("Detect border elements");
-		this.gui.add(this, "downloadAsJson").name("Donwload JSON file");
-		this.gui.add(this.gh, "visible").name("Axis");
-		this.gui.add(this, "rot").name("Rotation").listen();
+		this.settingsFolder
+			.add(this, "downloadAsJson")
+			.name("Donwload JSON file");
+		this.settingsFolder.add(this.gh, "visible").name("Axis");
+		this.settingsFolder.add(this, "rot").name("Rotation").listen();
 
-		this.gui
+		this.settingsFolder
 			.add(this, "wireframe")
 			.listen()
 			.onChange(() => {
@@ -610,20 +673,25 @@ class FEMViewer {
 				this.updateGeometry();
 			})
 			.name("Wireframe");
-		this.gui
+		this.settingsFolder
 			.add(this, "draw_lines")
 			.onChange(this.updateLines.bind(this))
 			.name("Draw lines");
-		this.sadguib = this.gui
-			.add(this, "solution_as_displacement")
-			.listen()
-			.name("Solution as disp")
-			.onFinishChange(this.toogleSolutionAsDisp.bind(this));
-		this.gui
+
+		if (this.config_dict["displacements"]) {
+		} else {
+			this.settingsFolder
+				.add(this, "solution_as_displacement")
+				.listen()
+				.name("Solution as disp")
+				.onFinishChange(this.toogleSolutionAsDisp.bind(this));
+		}
+
+		this.settingsFolder
 			.add(this, "clickMode", ["Inspect element", "Delete element"])
 			.listen()
 			.name("Click mode");
-		this.gui
+		this.settingsFolder
 			.add(this, "resolution", {
 				"Low (only vertices) (1)": 1,
 				"Medium (2)": 2,
@@ -634,7 +702,7 @@ class FEMViewer {
 			.listen()
 			.onChange(this.updateResolution.bind(this))
 			.name("LOD ⚠️ (expensive)");
-		this.gui
+		this.settingsFolder
 			.add(this, "theme", themes)
 			.name("Theme")
 			.listen()
@@ -976,7 +1044,7 @@ class FEMViewer {
 			this.zoomExtents();
 		}
 		this.renderer.render(this.scene, this.camera);
-		if (this.colors) {
+		if (this.colors && this.menuCerrado) {
 			this.renderer.render(this.uiScene, this.orthoCamera);
 		}
 	}
@@ -1013,7 +1081,7 @@ class FEMViewer {
 	addExamples(file_paths, b, a) {
 		this.before_load = b;
 		this.after_load = a;
-		this.gui
+		this.settingsFolder
 			.add(this, "filename", file_paths)
 			.name("Examples")
 			.listen()
@@ -1066,8 +1134,61 @@ class FEMViewer {
 		}
 		this.updateGeometry();
 	}
-
+	guiSolutions() {
+		if (this.guifolder) {
+			this.guifolder.destroy();
+		}
+		this.guifolder = this.gui.addFolder("Solutions");
+		this.color_select_option = this.guifolder
+			.add(this, "colorOptions", {
+				"No color": "nocolor",
+				"|U|": "dispmag",
+				"Scaled Jacobian": "scaled_jac",
+				...this.config_dict["dict"],
+				...this.prop_dict,
+			})
+			.name("Show color")
+			.listen()
+			.onChange(this.updateColorVariable.bind(this))
+			.onFinishChange(this.renderMath.bind(this));
+		this.guifolder
+			.add(this, "colormap", [
+				"rainbow",
+				"cooltowarm",
+				"blackbody",
+				"grayscale",
+			])
+			.listen()
+			.name("Colormap")
+			.onChange(this.updateLut.bind(this));
+		this.max_color_value_slider = this.guifolder
+			.add(this, "max_color_value", 0.0, 1.0)
+			.name("Max solution value")
+			.listen()
+			.onChange(this.updateLut.bind(this));
+		this.min_color_value_slider = this.guifolder
+			.add(this, "min_color_value", 0.0, 1.0)
+			.name("Min solution value")
+			.listen()
+			.onChange(this.updateLut.bind(this));
+		this.guifolder
+			.add(this, "step", this.solutions_info_str)
+			.onChange(this.updateSolution.bind(this))
+			.listen()
+			.name("Solution");
+		this.guifolder
+			.add(this, "info", Object.keys(this.solutions_info[this.step]))
+			.listen()
+			.onChange(this.updateSolutionInfo.bind(this));
+		this.guifolder
+			.add(this, "infoDetail", this.infoDetail)
+			.listen()
+			.disable();
+	}
 	async init(animate = true) {
+		this.guiSettingsBasic();
+		this.guiSettings();
+		this.guiSolutions();
 		this.animate = animate;
 		if (!this.config_dict["displacements"]) {
 			this.animate = false;
@@ -1104,7 +1225,6 @@ class FEMViewer {
 		//this.renderer.render(this.scene, this.camera);
 		//this.zoomExtents();
 		this.updateLines();
-		window.addEventListener("resize", this.render.bind(this));
 		if (!this.corriendo) {
 			this.corriendo = true;
 			this.animationFrameID = requestAnimationFrame(
@@ -1277,9 +1397,9 @@ class FEMViewer {
 				this.solutions_info.push({ ...solution["info"], index: i });
 			}
 		}
-		const solutions_info_str = [];
+		this.solutions_info_str = [];
 		for (let i = 0; i < this.solutions_info.length; i++) {
-			solutions_info_str.push(i);
+			this.solutions_info_str.push(i);
 		}
 		this.config_dict = CONFIG_DICT["GENERAL"];
 		let d = {};
@@ -1320,70 +1440,11 @@ class FEMViewer {
 			}
 		}
 		console.log(this.config_dict);
-		this.element_properties = {};
-		let prop_dict = {};
+		this.prop_dict = {};
 		for (const p of this.config_dict["props"]) {
-			this.element_properties[p] = jsondata["properties"][p];
-			prop_dict[p] = ["PROP", this.element_properties[p]];
+			this.prop_dict[p] = ["PROP", jsondata["properties"][p]];
 		}
 
-		if (this.config_dict["displacements"]) {
-			this.sadguib.disable();
-		} else {
-			this.sadguib.enable();
-		}
-
-		this.guiSettings();
-		if (this.loaded) {
-			this.guifolder.destroy();
-		}
-		let dict = this.config_dict["dict"];
-		this.guifolder = this.gui.addFolder("Solutions");
-		this.color_select_option = this.guifolder
-			.add(this, "colorOptions", {
-				"No color": "nocolor",
-				"|U|": "dispmag",
-				"Scaled Jacobian": "scaled_jac",
-				...dict,
-				...prop_dict,
-			})
-			.name("Show color")
-			.listen()
-			.onChange(this.updateColorVariable.bind(this))
-			.onFinishChange(this.renderMath.bind(this));
-		this.guifolder
-			.add(this, "colormap", [
-				"rainbow",
-				"cooltowarm",
-				"blackbody",
-				"grayscale",
-			])
-			.listen()
-			.name("Colormap")
-			.onChange(this.updateLut.bind(this));
-		this.max_color_value_slider = this.guifolder
-			.add(this, "max_color_value", 0.0, 1.0)
-			.name("Max solution value")
-			.listen()
-			.onChange(this.updateLut.bind(this));
-		this.min_color_value_slider = this.guifolder
-			.add(this, "min_color_value", 0.0, 1.0)
-			.name("Min solution value")
-			.listen()
-			.onChange(this.updateLut.bind(this));
-		this.guifolder
-			.add(this, "step", solutions_info_str)
-			.onChange(this.updateSolution.bind(this))
-			.listen()
-			.name("Solution");
-		this.guifolder
-			.add(this, "info", Object.keys(this.solutions_info[this.step]))
-			.listen()
-			.onChange(this.updateSolutionInfo.bind(this));
-		this.guifolder
-			.add(this, "infoDetail", this.infoDetail)
-			.listen()
-			.disable();
 		this.loaded = true;
 		this.info = Object.keys(this.solutions_info[this.step])[0];
 		this.infoDetail = this.solutions_info[this.step][this.info];

@@ -91,18 +91,6 @@ body {
 	border-radius: 6px;
 }
 
-.closed {
-	opacity: 0 !important;
-}
-.alwaysOpen {
-	opacity: 1 !important;
-}
-.open {
-	opacity: 1 !important;
-}
-.disabled {
-	opacity: 1 !important;
-}
 /* The Modal (background) */
 .modal {
 	display: none; /* Hidden by default */
