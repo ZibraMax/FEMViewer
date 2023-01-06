@@ -201,7 +201,7 @@ class ElementView {
 		interact(".draggable").draggable({
 			modifiers: [
 				interact.modifiers.restrictRect({
-					restriction: document.body,
+					restriction: this.container,
 				}),
 			],
 			listeners: {

@@ -70,9 +70,6 @@ const types = {
 	L2V: LinealO2,
 };
 
-const loader = document.createElement("div");
-loader.setAttribute("id", "loader");
-document.body.appendChild(loader);
 const themes = {
 	Default: {},
 	"Transparent background": {
@@ -170,12 +167,18 @@ class FEMViewer {
 			magnif = 0;
 		}
 		// FEM
+
 		this.container = container;
 		let canvas = document.createElement("canvas");
 		canvas.setAttribute("class", "box side-pane");
 		canvas.setAttribute("willReadFrequently", "true");
 		this.container.appendChild(canvas);
 		this.canvas = canvas;
+
+		this.loaderIcon = document.createElement("div");
+		this.loaderIcon.setAttribute("class", "loaderIcon");
+		this.container.appendChild(this.loaderIcon);
+
 		this.theme = themes["Default"];
 		this.element_views = new Set();
 		this.refreshing = true;
@@ -196,10 +199,10 @@ class FEMViewer {
 		this.notiBar = new NotificationBar(this.container);
 
 		this.before_load = () => {
-			loader.style.display = "";
+			this.loaderIcon.style.display = "";
 		};
 		this.after_load = () => {
-			loader.style.display = "none";
+			this.loaderIcon.style.display = "none";
 		};
 		this.rot = rot;
 		this.resolution = 1;
