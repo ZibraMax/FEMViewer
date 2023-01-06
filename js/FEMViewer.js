@@ -23,6 +23,7 @@ import {
 	min,
 } from "./Elements.js";
 import { NotificationBar } from "./NotificationBar.js";
+import { Modal } from "./ModalManager.js";
 function allowUpdate() {
 	return new Promise((f) => {
 		setTimeout(f, 0);
@@ -228,7 +229,6 @@ class FEMViewer {
 		this.border_elements = [];
 		this.config_dict = CONFIG_DICT["GENERAL"];
 		this.dimensions = ["x", "y", "z"];
-		this.histogram = document.getElementById("histogram");
 
 		// THREE JS
 		this.renderer = new THREE.WebGLRenderer({
@@ -265,8 +265,22 @@ class FEMViewer {
 		this.loaded = false;
 		this.colorOptions = "nocolor";
 		this.clickMode = "Inspect element";
+		this.createModals();
+		this.histogram = document.getElementById("histogram");
+
 		this.settings();
 		this.createListeners();
+	}
+	createModals() {
+		this.JSONModal = new Modal(document.body, "File input");
+		let content = document.createElement("div");
+		content.innerHTML =
+			'<div class="dropzone-container"><form id="json-file-input" class="dropzone" action="/" method="post"></form></div>';
+		this.JSONModal.addContent(content);
+
+		this.histogramModal = new Modal(document.body, "Histogram view");
+		this.histogramModal.content.innerHTML =
+			'<div id="histogram" style="width: 100%; height: 100%"></div>';
 	}
 
 	onDocumentKeyDown(event) {
@@ -411,16 +425,16 @@ class FEMViewer {
 		return this.refreshing;
 	}
 	modalManager() {
-		activateModal("myModal");
+		this.JSONModal.show();
 		this.gui.close();
 	}
 	modalManager2() {
-		activateModal("myModal2");
+		this.histogramModal.show();
 		this.createHistogram();
 		this.gui.close();
 	}
 	modalManager3() {
-		activateModal("myModal2");
+		this.histogramModal.show();
 		this.createHistogram2();
 		this.gui.close();
 	}
@@ -732,11 +746,13 @@ class FEMViewer {
 
 		if (this.config_dict["displacements"]) {
 		} else {
-			this.settingsFolder
-				.add(this, "solution_as_displacement")
-				.listen()
-				.name("Solution as disp")
-				.onFinishChange(this.toogleSolutionAsDisp.bind(this));
+			if (this.ndim != 3) {
+				this.settingsFolder
+					.add(this, "solution_as_displacement")
+					.listen()
+					.name("Solution as disp")
+					.onFinishChange(this.toogleSolutionAsDisp.bind(this));
+			}
 		}
 
 		this.settingsFolder
