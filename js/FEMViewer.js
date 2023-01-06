@@ -254,7 +254,7 @@ class FEMViewer {
 		this.lut = new Lut(this.colormap);
 		this.filename = "";
 
-		this.gui = new GUI({ title: "Menu" });
+		this.gui = new GUI({ title: "Menu", container: this.container });
 		this.gui.close();
 		this.loaded = false;
 		this.colorOptions = "nocolor";

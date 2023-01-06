@@ -241,9 +241,14 @@ body {
 .fa {
 	color: var(--text-color);
 }
+.lil-gui.root {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+}
 
 .notification-container {
-	position: fixed;
+	position: absolute;
 	bottom: -5px;
 	right: -5px;
 	border-radius: 10px;
