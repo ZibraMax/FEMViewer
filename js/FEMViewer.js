@@ -373,6 +373,11 @@ class FEMViewer {
 		this.updateColors();
 		this.updateMaterial();
 		this.updateGeometry();
+		this.updateGraphs();
+	}
+	updateGraphs() {
+		Plotly.relayout(this.histogram, PLOT_STYLE);
+		Plotly.restyle(this.histogram, { "marker.color": FOCUS_COLOR });
 	}
 
 	updateResolution() {

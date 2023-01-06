@@ -52,7 +52,6 @@ class NotificationBar {
 		}, timeout);
 	}
 	setMessage(msg, prevent) {
-		console.log(msg, prevent);
 		this.status_text.innerHTML = msg;
 		if (!prevent) {
 		}

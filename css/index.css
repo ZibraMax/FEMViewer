@@ -92,10 +92,10 @@ body {
 .mini-box-center {
 	position: absolute;
 	background-color: var(--over-backbround-color);
-	height: 320px;
-	width: 370px;
-	left: calc(50% - 370px / 2);
-	top: calc(50% - 320px / 2);
+	height: 400px;
+	width: 700px;
+	left: calc(50% - 700px / 2);
+	top: calc(50% - 400px / 2);
 	overflow: hidden;
 	border: solid 2px var(--gui-title-background-color);
 	border-radius: 6px;
@@ -256,7 +256,7 @@ body {
 .modal-content-view {
 	margin-top: 20px;
 	width: 100%;
-	height: 100%;
+	height: 85%;
 }
 
 .header-element-viewer {
