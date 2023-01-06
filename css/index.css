@@ -221,6 +221,9 @@ body {
 .draggable {
 	touch-action: none;
 }
+.draggableModalManager {
+	touch-action: none;
+}
 .resizable {
 	touch-action: none;
 }
