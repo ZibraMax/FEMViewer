@@ -97,7 +97,6 @@ body {
 	left: calc(50% - 370px / 2);
 	top: calc(50% - 320px / 2);
 	overflow: hidden;
-	resize: both;
 	border: solid 2px var(--gui-title-background-color);
 	border-radius: 6px;
 }

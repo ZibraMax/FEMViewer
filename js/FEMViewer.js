@@ -162,20 +162,6 @@ document.body.appendChild(styleElement);
 
 var GOBAL_DRAG = false;
 
-function activateModal(id) {
-	var modal = document.getElementById(id);
-	var span = modal.getElementsByClassName("close")[0];
-	modal.style.display = "table";
-	span.onclick = function () {
-		modal.style.display = "none";
-	};
-	window.onclick = function (event) {
-		if (event.target == modal) {
-			modal.style.display = "none";
-		}
-	};
-}
-
 Dropzone.autoDiscover = false;
 
 class FEMViewer {
@@ -280,7 +266,7 @@ class FEMViewer {
 
 		this.histogramModal = new Modal(document.body, "Histogram view");
 		this.histogramModal.content.innerHTML =
-			'<div id="histogram" style="width: 100%; height: 100%"></div>';
+			'<div id="histogram" style="width: 100%; height: 85%"></div>';
 	}
 
 	onDocumentKeyDown(event) {
