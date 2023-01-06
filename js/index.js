@@ -52,9 +52,9 @@ if (path_str.startsWith("https://")) {
 	path = path_str;
 }
 
-const canvas = document.getElementById("model-view");
+const container = document.getElementById("models-container");
 
-const O = new FEMViewer(canvas, magnif, rot, axis == 1, zoom);
+const O = new FEMViewer(container, magnif, rot, axis == 1, zoom);
 O.theme = themes[theme] || {};
 O.updateStylesheet();
 O.updateColors();

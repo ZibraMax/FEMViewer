@@ -10,9 +10,9 @@ const LOD_LEVELS = {
 };
 
 class ElementView {
-	static parent = document.getElementById("models-container");
-	constructor(element, parent, res) {
+	constructor(element, parent, res, container) {
 		this.element = element;
+		this.container = container;
 		this.parent = parent;
 		this.res = res || 3;
 		this.restartElement();
@@ -195,7 +195,7 @@ class ElementView {
 		root.appendChild(header);
 		root.appendChild(this.canvas);
 		root.appendChild(footer);
-		ElementView.parent.appendChild(root);
+		this.container.appendChild(root);
 		this.root = root;
 
 		interact(".draggable").draggable({

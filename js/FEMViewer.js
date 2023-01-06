@@ -165,11 +165,17 @@ var GOBAL_DRAG = false;
 Dropzone.autoDiscover = false;
 
 class FEMViewer {
-	constructor(canvas, magnif, rot, axis = false, iz = 1.05) {
+	constructor(container, magnif, rot, axis = false, iz = 1.05) {
 		if (!magnif) {
 			magnif = 0;
 		}
 		// FEM
+		this.container = container;
+		let canvas = document.createElement("canvas");
+		canvas.setAttribute("class", "box side-pane");
+		canvas.setAttribute("willReadFrequently", "true");
+		this.container.appendChild(canvas);
+		this.canvas = canvas;
 		this.theme = themes["Default"];
 		this.element_views = new Set();
 		this.refreshing = true;
@@ -183,12 +189,11 @@ class FEMViewer {
 		this.initial_zoom = iz;
 		this.solution_as_displacement = false;
 		this.axis = axis;
-		this.canvas = canvas;
 		this.max_color_value_slider = undefined;
 		this.min_color_value_slider = undefined;
 		this.resource_tracker = new ResourceTracker();
 		this.raycaster = new THREE.Raycaster();
-		this.notiBar = new NotificationBar(document.body);
+		this.notiBar = new NotificationBar(this.container);
 
 		this.before_load = () => {
 			loader.style.display = "";
@@ -258,13 +263,13 @@ class FEMViewer {
 		this.createListeners();
 	}
 	createModals() {
-		this.JSONModal = new Modal(document.body, "File input");
+		this.JSONModal = new Modal(this.container, "File input");
 		let content = document.createElement("div");
 		content.innerHTML =
 			'<div class="dropzone-container"><form id="json-file-input" class="dropzone" action="/" method="post"></form></div>';
 		this.JSONModal.addContent(content);
 
-		this.histogramModal = new Modal(document.body, "Histogram view");
+		this.histogramModal = new Modal(this.container, "Histogram view");
 		this.histogramModal.content.innerHTML =
 			'<div id="histogram" style="width: 100%; height: 85%"></div>';
 	}
@@ -1121,7 +1126,12 @@ class FEMViewer {
 			const first = obj.value;
 			this.destroy_element_view(first);
 		}
-		let element_view = new ElementView(e, this, this.resolution);
+		let element_view = new ElementView(
+			e,
+			this,
+			this.resolution,
+			this.container
+		);
 		this.element_views.add(element_view);
 		//this.show_element_views();
 	}
