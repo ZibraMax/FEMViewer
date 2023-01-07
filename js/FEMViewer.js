@@ -1299,7 +1299,6 @@ class FEMViewer {
 
 		this.scene.add(this.model);
 		this.scene.add(this.invisibleModel);
-		this.scene.add(this.model);
 		//this.renderer.render(this.scene, this.camera);
 		//this.zoomExtents();
 		this.updateLines();
@@ -1361,7 +1360,7 @@ class FEMViewer {
 	calculate_border_elements_worker() {
 		if (this.ndim == 3) {
 			let e = undefined;
-			for (const controller of this.gui.controllers) {
+			for (const controller of this.settingsFolder.controllers) {
 				if (controller.property == "detectBorderElements2") {
 					e = controller.$name;
 				}
@@ -1380,13 +1379,13 @@ class FEMViewer {
 
 			myWorker.onmessage = function (msg) {
 				if (msg.data[0] == "MSG") {
-					this.notiBar.setMessage(msg.data[1]);
+					OBJ.notiBar.setMessage(msg.data[1]);
 				} else {
 					const be = msg.data;
 					OBJ.updateBorderElements(be);
 					const original = "Detect border elements";
 					e.innerHTML = original;
-					this.notiBar.sendMessage("Border elements finished!");
+					OBJ.notiBar.sendMessage("Border elements finished!");
 				}
 			};
 		} else {
