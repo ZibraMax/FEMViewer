@@ -603,6 +603,7 @@ class FEMViewer {
 		} else {
 			this.model.remove(this.octreeMesh);
 		}
+		this.updateShowModel();
 	}
 
 	reset() {
@@ -743,8 +744,13 @@ class FEMViewer {
 	async updateShowModel() {
 		this.mesh.visible = this.show_model;
 		this.contour.visible = this.show_model;
-		this.gh.visible = !this.show_model;
-		await this.render(0);
+		this.gh.visible = true;
+		for (const ch of this.model.children) {
+			if (ch.visible) {
+				this.gh.visible = false;
+				break;
+			}
+		}
 	}
 
 	guiSettingsBasic() {
@@ -1101,6 +1107,11 @@ class FEMViewer {
 	}
 
 	updateGeometry() {
+		if (this.octreeMesh) {
+			this.octreeMesh.material = this.line_material;
+			this.octreeMesh.material.needsUpdate = true;
+		}
+
 		this.mergedGeometry.dispose();
 		this.mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(
 			this.bufferGeometries,
