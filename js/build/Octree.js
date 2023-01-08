@@ -1,3 +1,5 @@
+import { EdgesGeometry, BoxGeometry } from "./three.module.js";
+
 class Quadrant3D {
 	constructor(p, dim) {
 		let [x, y, z] = p;
@@ -34,6 +36,24 @@ class Quadrant3D {
 		}
 
 		return true;
+	}
+
+	giveBox(norm) {
+		let geo = new BoxGeometry(
+			2 * this.w * norm,
+			2 * this.h * norm,
+			2 * this.d * norm
+		);
+		for (let i = 0; i < geo.attributes.position.count; i++) {
+			const x = geo.attributes.position.getX(i);
+			const y = geo.attributes.position.getY(i);
+			const z = geo.attributes.position.getZ(i);
+
+			geo.attributes.position.setX(i, x + this.x * norm);
+			geo.attributes.position.setY(i, y + this.y * norm);
+			geo.attributes.position.setZ(i, z + this.z * norm);
+		}
+		return geo;
 	}
 
 	boxes_disjoint(e) {
@@ -97,6 +117,19 @@ class Geometree {
 		this.children = [];
 		this.depth = depth;
 	}
+
+	giveContours(norm) {
+		let res = [];
+		let geo = this.boundary.giveBox(norm);
+		let edges = new EdgesGeometry(geo);
+		edges.computeVertexNormals();
+		res.push(edges);
+		for (const ch of this.children) {
+			res = res.concat(ch.giveContours(norm));
+		}
+		return res;
+	}
+
 	contains(p) {
 		return this.boundary.contains(p);
 	}

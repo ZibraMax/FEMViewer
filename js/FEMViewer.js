@@ -248,6 +248,9 @@ class FEMViewer {
 		this.max_disp = 0.0;
 		this.draw_lines = true;
 		this.colormap = "rainbow";
+		this.show_model = true;
+		this.octreeMesh = undefined;
+		this.showOctree = false;
 
 		this.menuCerrado = true;
 
@@ -523,7 +526,11 @@ class FEMViewer {
 				this.notiBar.setProgressBar("Creating Oct Tree", percentage);
 				await allowUpdate();
 			}
+			this.notiBar.sendMessage("Octree created!");
 		}
+		const geo_list = this.OctTree.giveContours(this.norm);
+		const geo = BufferGeometryUtils.mergeBufferGeometries(geo_list, true);
+		this.octreeMesh = new THREE.LineSegments(geo, this.line_material);
 	}
 	async detectBorderElements2() {
 		await this.createOctree();
@@ -586,6 +593,18 @@ class FEMViewer {
 		this.parseJSON(jsondata);
 		this.notiBar.resetMessage();
 	}
+
+	async updateShowOctree() {
+		if (this.showOctree) {
+			if (!this.octreeMesh) {
+				await this.createOctree();
+			}
+			this.model.add(this.octreeMesh);
+		} else {
+			this.model.remove(this.octreeMesh);
+		}
+	}
+
 	reset() {
 		this.solution_as_displacement = false;
 		this.variable_as_displacement = 2;
@@ -608,6 +627,13 @@ class FEMViewer {
 
 		this.destroy_element_views();
 		this.resource_tracker.dispose();
+
+		if (this.octreeMesh) {
+			track(this.octreeMesh);
+		}
+
+		this.show_model = true;
+		this.showOctree = false;
 
 		this.element_views = new Set();
 		this.wireframe = false;
@@ -638,6 +664,10 @@ class FEMViewer {
 		delete this.mergedLineGeometry;
 		this.resource_tracker.untrack(this.model);
 		this.resource_tracker.untrack(this.invisibleModel);
+		if (this.octreeMesh) {
+			this.resource_tracker.untrack(this.octreeMesh);
+		}
+		this.octreeMesh = undefined;
 	}
 
 	settings() {
@@ -709,6 +739,14 @@ class FEMViewer {
 		});
 		//this.guiSettingsBasic();
 	}
+
+	async updateShowModel() {
+		this.mesh.visible = this.show_model;
+		this.contour.visible = this.show_model;
+		this.gh.visible = !this.show_model;
+		await this.render(0);
+	}
+
 	guiSettingsBasic() {
 		if (this.settingsFolder) {
 			this.settingsFolder.destroy();
@@ -727,7 +765,7 @@ class FEMViewer {
 		this.settingsFolder
 			.add(this, "downloadAsJson")
 			.name("Donwload JSON file");
-		this.settingsFolder.add(this.gh, "visible").name("Axis");
+		this.settingsFolder.add(this.gh, "visible").listen().name("Axis");
 		this.settingsFolder.add(this, "rot").name("Rotation").listen();
 
 		this.settingsFolder
@@ -742,6 +780,17 @@ class FEMViewer {
 			.add(this, "draw_lines")
 			.onChange(this.updateLines.bind(this))
 			.name("Draw lines");
+
+		this.settingsFolder
+			.add(this, "showOctree")
+			.onChange(this.updateShowOctree.bind(this))
+			.listen()
+			.name("Show Octree");
+		this.settingsFolder
+			.add(this, "show_model")
+			.name("Show model")
+			.onChange(this.updateShowModel.bind(this))
+			.listen();
 
 		if (this.config_dict["displacements"]) {
 		} else {
@@ -1526,8 +1575,12 @@ class FEMViewer {
 		let centerx = (max(secon_coords[0]) + min(secon_coords[0])) / 2;
 		let centery = (max(secon_coords[1]) + min(secon_coords[1])) / 2;
 		let centerz = (max(secon_coords[2]) + min(secon_coords[2])) / 2;
-		this.center = [centerx, centery, centerz];
-		this.dimens = [sizex, sizey, sizez];
+		this.center = [
+			centerx - sizex / 2,
+			centery - sizey / 2,
+			centerz - sizez / 2,
+		];
+		this.dimens = [sizex / 2, sizey / 2, sizez / 2];
 		for (let i = 0; i < this.nodes.length; i++) {
 			this.nodes[i][0] -= sizex / 2;
 			this.nodes[i][1] -= sizey / 2;
