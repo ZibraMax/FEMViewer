@@ -549,10 +549,10 @@ class Element {
 			let [puntos, pp] = this.T(zi);
 			p = pp;
 			let punot = puntos[0];
-			let xi = add(x0, multiplyEscalar(punot, -1)); //TODO Esto no esta funcionando
+			let xi = add(x0, multiplyEscalar(punot, -1));
 			let [J, dpz] = this.J(zi);
 			let _J = matInverse(J);
-			let dz = multiply(_J, transpose([xi])).flat(); //Esto debería funcionar
+			let dz = multiply(_J, transpose([xi])).flat();
 			zi = add(zi, dz);
 			if (sum(abs(dz)) < 0.00001) {
 				break;
