@@ -7,7 +7,7 @@ import * as BufferGeometryUtils from "./build/BufferGeometryUtils.js";
 import { AxisGridHelper } from "./build/minigui.js";
 import { Lut } from "./build/Lut.js";
 import { CONFIG_DICT } from "./ConfigDicts.js";
-import { Geometree, Quadrant3D } from "./build/Octree.js";
+import { Geometree, Quadrant3D } from "./Octree.js";
 import {
 	Brick,
 	BrickO2,
@@ -21,6 +21,7 @@ import {
 	LinealO2,
 	max,
 	min,
+	transpose,
 } from "./Elements.js";
 import { NotificationBar } from "./NotificationBar.js";
 import { Modal } from "./ModalManager.js";
@@ -261,7 +262,7 @@ class FEMViewer {
 		this.gui.close();
 		this.loaded = false;
 		this.colorOptions = "nocolor";
-		this.clickMode = "Inspect element";
+		this.clickMode = "Detect nodes";
 		this.createModals();
 		this.histogram = document.getElementById("histogram");
 
@@ -511,8 +512,38 @@ class FEMViewer {
 		}
 		return [false, potential];
 	}
-
 	async createOctree() {
+		this.notiBar.setMessage("Creating Oct Tree... ⌛");
+		let nodes = transpose(this._nodes);
+		let centerx = (max(nodes[0]) + min(nodes[0])) / 2;
+		let sizex = (max(nodes[0]) - min(nodes[0])) / 2;
+		let centery = (max(nodes[1]) + min(nodes[1])) / 2;
+		let sizey = (max(nodes[1]) - min(nodes[1])) / 2;
+		let centerz = (max(nodes[2]) + min(nodes[2])) / 2;
+		let sizez = (max(nodes[2]) - min(nodes[2])) / 2;
+
+		let FF = 1.1;
+		let dimension = [sizex * FF, sizey * FF, sizez * FF];
+		let bounding = new Quadrant3D([centerx, centery, centerz], dimension);
+		this.OctTree = new Geometree(bounding);
+		let times = 0;
+		for (let i = 0; i < this._nodes.length; i++) {
+			let p = { _xcenter: this._nodes[i].slice(), id: i };
+			this.OctTree.add_point(p);
+			let percentage = (i / this._nodes.length) * 100;
+			if (percentage > times) {
+				times += 10;
+				this.notiBar.setProgressBar("Creating Oct Tree", percentage);
+				await allowUpdate();
+			}
+			this.notiBar.sendMessage("Octree created!");
+		}
+		const geo_list = this.OctTree.giveContours(this.norm);
+		const geo = BufferGeometryUtils.mergeBufferGeometries(geo_list, true);
+		this.octreeMesh = new THREE.LineSegments(geo, this.line_material);
+	}
+
+	async createOctreeBorderDetect() {
 		this.notiBar.setMessage("Creating Oct Tree... ⌛");
 		let bounding = new Quadrant3D(this.center, this.dimens);
 		this.OctTree = new Geometree(bounding);
@@ -810,7 +841,11 @@ class FEMViewer {
 		}
 
 		this.settingsFolder
-			.add(this, "clickMode", ["Inspect element", "Delete element"])
+			.add(this, "clickMode", [
+				"Inspect element",
+				"Delete element",
+				"Detect nodes",
+			])
 			.listen()
 			.name("Click mode");
 		this.settingsFolder
@@ -1591,13 +1626,28 @@ class FEMViewer {
 			centery - sizey / 2,
 			centerz - sizez / 2,
 		];
-		this.dimens = [sizex / 2, sizey / 2, sizez / 2];
 		for (let i = 0; i < this.nodes.length; i++) {
 			this.nodes[i][0] -= sizex / 2;
 			this.nodes[i][1] -= sizey / 2;
 			this.nodes[i][2] -= sizez / 2;
 		}
+
 		this.size = max(this.nodes.flat()) - min(this.nodes.flat());
+		this.dimens = [sizex / 2, sizey / 2, sizez / 2];
+		this._nodes = [...this.nodes];
+		let h = this.size / 20;
+		for (const n of this.nodes) {
+			if (this.ndim == 1 || this.ndim == 2) {
+				let node = [n[0], n[1], n[2] + h];
+				this._nodes.push(node);
+				if (this.ndim == 1) {
+					node = [n[0], n[1] + h, n[2] + h];
+					this._nodes.push(node);
+					node = [n[0], n[1] + h, n[2]];
+					this._nodes.push(node);
+				}
+			}
+		}
 	}
 	updateSolutionInfo() {
 		this.infoDetail = this.solutions_info[this.step][this.info];
@@ -1736,37 +1786,41 @@ class FEMViewer {
 					-(event.clientY / window.innerHeight) * 2 + 1
 				);
 				this.raycaster.setFromCamera(mouse3D, this.camera);
-				const intersects = this.raycaster.intersectObjects(
-					this.invisibleModel.children
-				);
-				if (intersects.length > 0) {
-					const i = intersects[0].object.userData.elementId;
-					const e = this.elements[i];
-					if (this.clickMode == "Delete element") {
-						intersects[0].object.geometry.dispose();
-						intersects[0].object.material.dispose();
-						this.invisibleModel.remove(intersects[0].object);
-						this.not_draw_elements.push(i);
-						this.bufferGeometries[i].dispose();
-						this.bufferLines[i].dispose();
-						e.geometry.dispose();
-						this.elements.splice(i, 1);
-						this.bufferGeometries.splice(i, 1);
-						this.bufferLines.splice(i, 1);
+				if (this.clickMode == "Detect nodes") {
+					console.log(this.raycaster.ray);
+				} else {
+					const intersects = this.raycaster.intersectObjects(
+						this.invisibleModel.children
+					);
+					if (intersects.length > 0) {
+						const i = intersects[0].object.userData.elementId;
+						const e = this.elements[i];
+						if (this.clickMode == "Delete element") {
+							intersects[0].object.geometry.dispose();
+							intersects[0].object.material.dispose();
+							this.invisibleModel.remove(intersects[0].object);
+							this.not_draw_elements.push(i);
+							this.bufferGeometries[i].dispose();
+							this.bufferLines[i].dispose();
+							e.geometry.dispose();
+							this.elements.splice(i, 1);
+							this.bufferGeometries.splice(i, 1);
+							this.bufferLines.splice(i, 1);
 
-						for (
-							let i = 0;
-							i < this.invisibleModel.children.length;
-							i++
-						) {
-							this.invisibleModel.children[i].userData = {
-								elementId: i,
-							};
+							for (
+								let i = 0;
+								i < this.invisibleModel.children.length;
+								i++
+							) {
+								this.invisibleModel.children[i].userData = {
+									elementId: i,
+								};
+							}
+						} else if (this.clickMode == "Inspect element") {
+							this.createElementView(e);
 						}
-					} else if (this.clickMode == "Inspect element") {
-						this.createElementView(e);
+						this.updateGeometry();
 					}
-					this.updateGeometry();
 				}
 			}
 		}

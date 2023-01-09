@@ -1,4 +1,4 @@
-import { EdgesGeometry, BoxGeometry } from "./three.module.js";
+import { EdgesGeometry, BoxGeometry } from "./build/three.module.js";
 
 class Quadrant3D {
 	constructor(p, dim) {
@@ -208,6 +208,9 @@ class Geometree {
 			return this.points;
 		}
 		console.error("This should not happen");
+	}
+	query_ray(ray, d) {
+		console.error("Not implemented");
 	}
 }
 

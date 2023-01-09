@@ -1523,4 +1523,5 @@ export {
 	fromElement,
 	max,
 	min,
+	transpose,
 };
