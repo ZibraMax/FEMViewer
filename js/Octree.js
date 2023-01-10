@@ -1,4 +1,10 @@
-import { EdgesGeometry, BoxGeometry } from "./build/three.module.js";
+import {
+	EdgesGeometry,
+	BoxGeometry,
+	Float32BufferAttribute,
+} from "./build/three.module.js";
+
+import { dot, add, multiplyScalar, point_to_ray_distance } from "./math.js";
 
 class Quadrant3D {
 	constructor(p, dim) {
@@ -19,20 +25,36 @@ class Quadrant3D {
 		this.coordsT = this.coords[0].map((_, colIndex) =>
 			this.coords.map((row) => row[colIndex])
 		);
-		this.maximos_this = [];
-		this.minimos_this = [];
+		this.Pmax = [];
+		this.Pmin = [];
 		for (let i = 0; i < 3; i++) {
-			this.maximos_this.push(Math.max(...this.coordsT[i]));
-			this.minimos_this.push(Math.min(...this.coordsT[i]));
+			this.Pmax.push(Math.max(...this.coordsT[i]));
+			this.Pmin.push(Math.min(...this.coordsT[i]));
 		}
 		this._xcenter = [x, y, z];
+		this.face_normals = [
+			[-1, 0, 0],
+			[0, -1, 0],
+			[0, 0, -1],
+			[1, 0, 0],
+			[0, 1, 0],
+			[0, 0, 1],
+		];
+		this.base_vertex = [
+			this.Pmin,
+			this.Pmin,
+			this.Pmin,
+			this.Pmax,
+			this.Pmax,
+			this.Pmax,
+		];
 	}
 	contains(e) {
 		let x = e["_xcenter"];
 
 		for (let i = 0; i < 3; i++) {
-			if (this.maximos_this[i] - x[i] < 0) return false;
-			if (x[i] - this.minimos_this[i] < 0) return false;
+			if (this.Pmax[i] - x[i] < 0) return false;
+			if (x[i] - this.Pmin[i] < 0) return false;
 		}
 
 		return true;
@@ -57,11 +79,11 @@ class Quadrant3D {
 	}
 
 	boxes_disjoint(e) {
-		let [maxx1, maxy1, maxz1] = this.maximos_this;
-		let [minx1, miny1, minz1] = this.minimos_this;
+		let [maxx1, maxy1, maxz1] = this.Pmax;
+		let [minx1, miny1, minz1] = this.Pmin;
 
-		let [maxx2, maxy2, maxz2] = e.maximos_this;
-		let [minx2, miny2, minz2] = e.minimos_this;
+		let [maxx2, maxy2, maxz2] = e.Pmax;
+		let [minx2, miny2, minz2] = e.Pmin;
 
 		return (
 			maxx2 <= minx1 ||
@@ -74,6 +96,22 @@ class Quadrant3D {
 	}
 	intesects_quadrant(e) {
 		return !this.boxes_disjoint(e);
+	}
+	intesects_ray(s, v) {
+		for (let i = 0; i < this.face_normals.length; i++) {
+			const n = this.face_normals[i];
+			const P0 = this.base_vertex[i];
+			let nv = dot(n, v);
+			let R = s;
+			if (nv != 0) {
+				let t = (dot(n, P0) - dot(n, s)) / nv;
+				R = add(multiplyScalar(v, t), s);
+				if (this.contains({ _xcenter: R })) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	subdivide() {
 		let divs = [];
@@ -209,8 +247,19 @@ class Geometree {
 		}
 		console.error("This should not happen");
 	}
-	query_ray(ray, d) {
-		console.error("Not implemented");
+	query_ray(s, v, d) {
+		let r = [];
+		if (!this.boundary.intesects_ray(s, v)) {
+			return r;
+		}
+		for (const ch of this.children) {
+			let ch_points = ch.query_ray(s, v, d);
+			r = r.concat(ch_points);
+		}
+		for (const p of this.points) {
+			r.push({ ...p });
+		}
+		return r;
 	}
 }
 

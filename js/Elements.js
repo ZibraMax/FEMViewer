@@ -1,242 +1,17 @@
 import * as THREE from "./build/three.module.js";
 import { Prism, Tet } from "./TriangularBasedGeometries.js";
-
-function vecMake(n, val) {
-	let result = [];
-	for (let i = 0; i < n; ++i) {
-		result[i] = val;
-	}
-	return result;
-}
-
-function matMake(rows, cols, val) {
-	let result = [];
-	for (let i = 0; i < rows; ++i) {
-		result[i] = [];
-		for (let j = 0; j < cols; ++j) {
-			result[i][j] = val;
-		}
-	}
-	return result;
-}
-
-function matProduct(ma, mb) {
-	let aRows = ma.length;
-	let aCols = ma[0].length;
-	let bRows = mb.length;
-	let bCols = mb[0].length;
-	if (aCols != bRows) {
-		throw "Non-conformable matrices";
-	}
-
-	let result = matMake(aRows, bCols, 0.0);
-
-	for (let i = 0; i < aRows; ++i) {
-		// each row of A
-		for (let j = 0; j < bCols; ++j) {
-			// each col of B
-			for (let k = 0; k < aCols; ++k) {
-				// could use bRows
-				result[i][j] += ma[i][k] * mb[k][j];
-			}
-		}
-	}
-
-	return result;
-}
-
-function matInverse(m) {
-	let n = m.length;
-	let result = matMake(n, n, 0.0); // make a copy
-	for (let i = 0; i < n; ++i) {
-		for (let j = 0; j < n; ++j) {
-			result[i][j] = m[i][j];
-		}
-	}
-
-	let lum = matMake(n, n, 0.0); // combined lower & upper
-	let perm = vecMake(n, 0.0); // out parameter
-	matDecompose(m, lum, perm); // ignore return
-
-	let b = vecMake(n, 0.0);
-	for (let i = 0; i < n; ++i) {
-		for (let j = 0; j < n; ++j) {
-			if (i == perm[j]) b[j] = 1.0;
-			else b[j] = 0.0;
-		}
-
-		let x = reduce(lum, b); //
-		for (let j = 0; j < n; ++j) result[j][i] = x[j];
-	}
-	return result;
-}
-
-function matDeterminant(m) {
-	let n = m.length;
-	let lum = matMake(n, n, 0.0);
-	let perm = vecMake(n, 0.0);
-	let result = matDecompose(m, lum, perm); // -1 or +1
-	for (let i = 0; i < n; ++i) result *= lum[i][i];
-	return result;
-}
-
-function matDecompose(m, lum, perm) {
-	let toggle = +1; // even (+1) or odd (-1) row permutatuions
-	let n = m.length;
-	for (let i = 0; i < n; ++i) {
-		for (let j = 0; j < n; ++j) {
-			lum[i][j] = m[i][j];
-		}
-	}
-
-	for (let i = 0; i < n; ++i) perm[i] = i;
-
-	for (let j = 0; j < n - 1; ++j) {
-		// note n-1
-		let max = Math.abs(lum[j][j]);
-		let piv = j;
-
-		for (let i = j + 1; i < n; ++i) {
-			// pivot index
-			let xij = Math.abs(lum[i][j]);
-			if (xij > max) {
-				max = xij;
-				piv = i;
-			}
-		} // i
-
-		if (piv != j) {
-			let tmp = lum[piv]; // swap rows j, piv
-			lum[piv] = lum[j];
-			lum[j] = tmp;
-
-			let t = perm[piv]; // swap perm elements
-			perm[piv] = perm[j];
-			perm[j] = t;
-
-			toggle = -toggle;
-		}
-
-		let xjj = lum[j][j];
-		if (xjj != 0.0) {
-			// TODO: fix bad compare here
-			for (let i = j + 1; i < n; ++i) {
-				let xij = lum[i][j] / xjj;
-				lum[i][j] = xij;
-				for (let k = j + 1; k < n; ++k) {
-					lum[i][k] -= xij * lum[j][k];
-				}
-			}
-		}
-	} // j
-
-	return toggle; // for determinant
-} // matDecompose
-
-function reduce(lum, b) {
-	// helper
-	let n = lum.length;
-	let x = vecMake(n, 0.0);
-	for (let i = 0; i < n; ++i) {
-		x[i] = b[i];
-	}
-
-	for (let i = 1; i < n; ++i) {
-		let sum = x[i];
-		for (let j = 0; j < i; ++j) {
-			sum -= lum[i][j] * x[j];
-		}
-		x[i] = sum;
-	}
-
-	x[n - 1] /= lum[n - 1][n - 1];
-	for (let i = n - 2; i >= 0; --i) {
-		let sum = x[i];
-		for (let j = i + 1; j < n; ++j) {
-			sum -= lum[i][j] * x[j];
-		}
-		x[i] = sum / lum[i][i];
-	}
-
-	return x;
-} // reduce
-
-function add(a, b) {
-	if (a instanceof Array && b instanceof Array) {
-		var m = new Array(a.length);
-		for (let i = 0; i < a.length; i++) {
-			m[i] = a[i] + b[i];
-		}
-		return m;
-	}
-}
-
-function abs(arr) {
-	return arr.map((x) => {
-		return Math.abs(x);
-	});
-}
-
-function max(arr) {
-	let maximo = arr[0];
-	for (let i = 1; i < arr.length; i++) {
-		if (arr[i] > maximo) {
-			maximo = arr[i];
-		}
-	}
-	return maximo;
-}
-
-function min(arr) {
-	let maximo = arr[0];
-	for (let i = 1; i < arr.length; i++) {
-		if (arr[i] < maximo) {
-			maximo = arr[i];
-		}
-	}
-	return maximo;
-}
-
-function inverse3x3(m) {
-	let [[a, b, c], [d, e, f], [g, h, i]] = m;
-	let x = e * i - h * f,
-		y = f * g - d * i,
-		z = d * h - g * e,
-		det = a * x + b * y + c * z;
-	return det != 0
-		? [
-				[x, c * h - b * i, b * f - c * e],
-				[y, a * i - c * g, d * c - a * f],
-				[z, g * b - a * h, a * e - d * b],
-		  ].map((r) => r.map((v) => (v /= det)))
-		: null;
-}
-function inverse2x2(matrix) {
-	let temp = [0][0];
-	matrix[0][0] = matrix[1][1];
-	matrix[1][1] = temp;
-	matrix[0][1] *= -1;
-	matrix[1][0] *= -1;
-	let determinate = matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
-	const flatMapped = matrix.flat().map((el) => (el * 1) / determinate);
-	matrix = [flatMapped.splice(0, 2), flatMapped.splice(0, 2)];
-	return matrix;
-}
-
-function inverse1x1(m) {
-	return [[1 / m[0][0]]];
-}
-
-function inverse(m) {
-	if (m.length == 3) {
-		return inverse3x3(m);
-	} else if (m.length == 2) {
-		return inverse2x2(m);
-	} else if (m.length == 1) {
-		return inverse1x1(m);
-	}
-}
-
+import {
+	sum,
+	det,
+	multiplyScalar,
+	multiply,
+	transpose,
+	min,
+	max,
+	abs,
+	add,
+	matInverse,
+} from "./math.js";
 function newPrism(n = 1) {
 	const tr = new Prism();
 	tr.divide(n - 1);
@@ -258,67 +33,6 @@ function newTet(n = 1) {
 	return geometry;
 }
 
-function transpose(arr) {
-	return arr[0].map((_, colIndex) => arr.map((row) => row[colIndex]));
-}
-function multiply(a, b) {
-	var aNumRows = a.length,
-		aNumCols = a[0].length,
-		bNumRows = b.length,
-		bNumCols = b[0].length,
-		m = new Array(aNumRows); // initialize array of rows
-	for (var r = 0; r < aNumRows; ++r) {
-		m[r] = new Array(bNumCols); // initialize the current row
-		for (var c = 0; c < bNumCols; ++c) {
-			m[r][c] = 0; // initialize the current cell
-			for (var i = 0; i < aNumCols; ++i) {
-				m[r][c] += a[r][i] * b[i][c];
-			}
-		}
-	}
-	return m;
-}
-
-function multiplyEscalar(a, escalar) {
-	var aNumRows = a.length;
-	var m = new Array(aNumRows);
-	let ndim = 2;
-	if (a[0].length == undefined) {
-		ndim = 1;
-	}
-	if (ndim == 2) {
-		var aNumCols = a[0].length;
-		for (var r = 0; r < aNumRows; ++r) {
-			m[r] = new Array(aNumCols);
-			for (var c = 0; c < aNumCols; ++c) {
-				m[r][c] = a[r][c] * escalar;
-			}
-		}
-	} else if (ndim == 1) {
-		for (var r = 0; r < aNumRows; ++r) {
-			m[r] = a[r] * escalar;
-		}
-	}
-	return m;
-}
-
-const det = (m) =>
-	m.length == 1
-		? m[0][0]
-		: m.length == 2
-		? m[0][0] * m[1][1] - m[0][1] * m[1][0]
-		: m[0].reduce(
-				(r, e, i) =>
-					r +
-					(-1) ** (i + 2) *
-						e *
-						det(m.slice(1).map((c) => c.filter((_, j) => i != j))),
-				0
-		  );
-
-function sum(arr) {
-	return arr.reduce((partialSum, a) => partialSum + a, 0);
-}
 class Element {
 	coords;
 	gdls;
@@ -549,7 +263,7 @@ class Element {
 			let [puntos, pp] = this.T(zi);
 			p = pp;
 			let punot = puntos[0];
-			let xi = add(x0, multiplyEscalar(punot, -1));
+			let xi = add(x0, multiplyScalar(punot, -1));
 			let [J, dpz] = this.J(zi);
 			let _J = matInverse(J);
 			let dz = multiply(_J, transpose([xi])).flat();
@@ -1521,7 +1235,4 @@ export {
 	Element,
 	Element3D,
 	fromElement,
-	max,
-	min,
-	transpose,
 };

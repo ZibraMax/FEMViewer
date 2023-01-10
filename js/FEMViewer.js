@@ -19,10 +19,14 @@ import {
 	Quadrilateral,
 	Serendipity,
 	LinealO2,
+} from "./Elements.js";
+import {
 	max,
 	min,
 	transpose,
-} from "./Elements.js";
+	multiplyScalar,
+	squared_distance,
+} from "./math.js";
 import { NotificationBar } from "./NotificationBar.js";
 import { Modal } from "./ModalManager.js";
 function allowUpdate() {
@@ -168,6 +172,8 @@ class FEMViewer {
 			magnif = 0;
 		}
 		// FEM
+
+		this.selectedNodes = [];
 
 		this.container = container;
 		let canvas = document.createElement("canvas");
@@ -638,6 +644,7 @@ class FEMViewer {
 	}
 
 	reset() {
+		this.selectedNodes = [];
 		this.solution_as_displacement = false;
 		this.variable_as_displacement = 2;
 		this.toogleSolutionAsDisp(); // THIS TOOGLE DISPLACEMENTS!!!
@@ -1786,41 +1793,120 @@ class FEMViewer {
 					-(event.clientY / window.innerHeight) * 2 + 1
 				);
 				this.raycaster.setFromCamera(mouse3D, this.camera);
-				if (this.clickMode == "Detect nodes") {
-					console.log(this.raycaster.ray);
-				} else {
-					const intersects = this.raycaster.intersectObjects(
-						this.invisibleModel.children
-					);
-					if (intersects.length > 0) {
-						const i = intersects[0].object.userData.elementId;
-						const e = this.elements[i];
-						if (this.clickMode == "Delete element") {
-							intersects[0].object.geometry.dispose();
-							intersects[0].object.material.dispose();
-							this.invisibleModel.remove(intersects[0].object);
-							this.not_draw_elements.push(i);
-							this.bufferGeometries[i].dispose();
-							this.bufferLines[i].dispose();
-							e.geometry.dispose();
-							this.elements.splice(i, 1);
-							this.bufferGeometries.splice(i, 1);
-							this.bufferLines.splice(i, 1);
+				const intersects = this.raycaster.intersectObjects(
+					this.invisibleModel.children
+				);
+				if (intersects.length > 0) {
+					const i = intersects[0].object.userData.elementId;
+					const e = this.elements[i];
+					if (this.clickMode == "Delete element") {
+						intersects[0].object.geometry.dispose();
+						intersects[0].object.material.dispose();
+						this.invisibleModel.remove(intersects[0].object);
+						this.not_draw_elements.push(i);
+						this.bufferGeometries[i].dispose();
+						this.bufferLines[i].dispose();
+						e.geometry.dispose();
+						this.elements.splice(i, 1);
+						this.bufferGeometries.splice(i, 1);
+						this.bufferLines.splice(i, 1);
 
-							for (
-								let i = 0;
-								i < this.invisibleModel.children.length;
-								i++
-							) {
-								this.invisibleModel.children[i].userData = {
-									elementId: i,
-								};
-							}
-						} else if (this.clickMode == "Inspect element") {
-							this.createElementView(e);
+						for (
+							let i = 0;
+							i < this.invisibleModel.children.length;
+							i++
+						) {
+							this.invisibleModel.children[i].userData = {
+								elementId: i,
+							};
 						}
-						this.updateGeometry();
+					} else if (this.clickMode == "Inspect element") {
+						this.createElementView(e);
+					} else if (this.clickMode == "Detect nodes") {
+						let vector_point = [...intersects[0].point];
+						let possible_coords = [];
+						for (let k = 0; k < e.coords.length; k++) {
+							let p = [...e.coords[k]];
+							possible_coords.push([p]);
+						}
+						if (this.ndim == 1 || this.ndim == 2) {
+							for (let k = 0; k < e.coords.length; k++) {
+								let p = [...e.coords[k]];
+								p[2] += this.size / 20;
+								possible_coords[k].push(p);
+							}
+							if (this.ndim == 1) {
+								for (let k = 0; k < e.coords.length; k++) {
+									let p = [...e.coords[k]];
+									p[1] += this.size / 20;
+									p[2] += this.size / 20;
+									possible_coords[k].push(p);
+									p = e.coords[k];
+									p[1] += this.size / 20;
+									possible_coords[k].push(p);
+								}
+							}
+						}
+						let encontrado = false;
+						let radius = 0.005 / 2;
+						for (
+							let index = 0;
+							index < possible_coords.length;
+							index++
+						) {
+							let possible_coords_index = possible_coords[index];
+							for (
+								let node = 0;
+								node < possible_coords_index.length;
+								node++
+							) {
+								const possible_coord =
+									possible_coords_index[node];
+								const p = multiplyScalar(
+									possible_coord,
+									this.norm
+								);
+								let d = squared_distance(p, vector_point);
+								if (d <= radius ** 2) {
+									encontrado = true;
+									break;
+								}
+							}
+							if (encontrado) {
+								for (
+									let node = 0;
+									node < possible_coords_index.length;
+									node++
+								) {
+									const possible_coord =
+										possible_coords_index[node];
+									const p = multiplyScalar(
+										possible_coord,
+										this.norm
+									);
+									let geo = new THREE.SphereGeometry(
+										radius,
+										8,
+										8
+									);
+									let mesh = new THREE.Mesh(
+										geo,
+										new THREE.MeshBasicMaterial({
+											color: "white",
+											wireframe: true,
+										})
+									);
+									mesh.translateX(p[0]);
+									mesh.translateY(p[1]);
+									mesh.translateZ(p[2]);
+									this.model.add(mesh);
+								}
+								selectedNodes.push(e.gdls[index] / this.nvn);
+								break;
+							}
+						}
 					}
+					this.updateGeometry();
 				}
 			}
 		}
