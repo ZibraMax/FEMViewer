@@ -133,6 +133,15 @@ function add(a, b) {
 		return m;
 	}
 }
+function subst(a, b) {
+	if (a instanceof Array && b instanceof Array) {
+		var m = new Array(a.length);
+		for (let i = 0; i < a.length; i++) {
+			m[i] = a[i] - b[i];
+		}
+		return m;
+	}
+}
 
 function abs(arr) {
 	return arr.map((x) => {
@@ -243,6 +252,13 @@ function squared_distance(p1, p2) {
 	}
 	return s;
 }
+function cross(p1, p2) {
+	return [
+		p1[1] * p2[2] - p1[2] * p2[1],
+		p1[2] * p2[0] - p1[0] * p2[2],
+		p1[0] * p2[1] - p1[1] * p2[0],
+	];
+}
 
 export {
 	squared_distance,
@@ -262,4 +278,6 @@ export {
 	vecMake,
 	dot,
 	point_to_ray_distance,
+	subst,
+	cross,
 };

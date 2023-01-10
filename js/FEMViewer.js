@@ -9,6 +9,11 @@ import { Lut } from "./build/Lut.js";
 import { CONFIG_DICT } from "./ConfigDicts.js";
 import { Geometree, Quadrant3D } from "./Octree.js";
 import {
+	LineRegion,
+	RectangularPlaneRegion,
+	TriangularPlaneRegion,
+} from "./Regions.js";
+import {
 	Brick,
 	BrickO2,
 	Tetrahedral,
@@ -801,6 +806,41 @@ class FEMViewer {
 		}
 	}
 
+	createRegion() {
+		if (this.selectedNodes.length == 2) {
+			let p1 = this.nodes[this.selectedNodes[0]];
+			let p2 = this.nodes[this.selectedNodes[1]];
+			let region = new LineRegion(p1, p2);
+			let geometry = region.giveGeometry(this.norm, this.size, this.ndim);
+			let material = this.material;
+			material.side = THREE.DoubleSide;
+			let mesh = new THREE.Mesh(geometry, this.material);
+			let mesh2 = new THREE.LineSegments(
+				new THREE.EdgesGeometry(geometry),
+				this.line_material
+			);
+			this.model.add(mesh);
+			this.model.add(mesh2);
+		} else {
+			this.notiBar.sendMessage(
+				"Regions can only be created with at least 2 nodes"
+			);
+		}
+		this.deselectAllNodes();
+	}
+
+	deselectAllNodes() {
+		for (const i of this.selectedNodes) {
+			for (const smm of this.selectedNodesMesh[i]) {
+				this.model.remove(smm);
+				smm.material.dispose();
+				smm.geometry.dispose();
+			}
+			delete this.selectedNodesMesh[i];
+		}
+		this.selectedNodes = [];
+	}
+
 	guiSettingsBasic() {
 		if (this.settingsFolder) {
 			this.settingsFolder.destroy();
@@ -819,6 +859,8 @@ class FEMViewer {
 		this.settingsFolder
 			.add(this, "downloadAsJson")
 			.name("Donwload JSON file");
+		this.settingsFolder.add(this, "createRegion").name("Create Region");
+
 		this.settingsFolder.add(this.gh, "visible").listen().name("Axis");
 		this.settingsFolder.add(this, "rot").name("Rotation").listen();
 
