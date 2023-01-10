@@ -214,6 +214,7 @@ class FEMViewer {
 		this.rot = rot;
 		this.resolution = 1;
 		this.nodes = [];
+		this.selectedNodesMesh = {};
 		this.nvn = -1;
 		this.dictionary = [];
 		this.types = [];
@@ -644,7 +645,6 @@ class FEMViewer {
 	}
 
 	reset() {
-		this.selectedNodes = [];
 		this.solution_as_displacement = false;
 		this.variable_as_displacement = 2;
 		this.toogleSolutionAsDisp(); // THIS TOOGLE DISPLACEMENTS!!!
@@ -670,6 +670,16 @@ class FEMViewer {
 		if (this.octreeMesh) {
 			track(this.octreeMesh);
 		}
+
+		for (const sn of this.selectedNodes) {
+			for (const smm of this.selectedNodesMesh[sn]) {
+				this.model.remove(smm);
+				smm.material.dispose();
+				smm.geometry.dispose();
+			}
+		}
+		this.selectedNodes = [];
+		this.selectedNodesMesh = {};
 
 		this.show_model = true;
 		this.showOctree = false;
@@ -1152,6 +1162,12 @@ class FEMViewer {
 		if (this.octreeMesh) {
 			this.octreeMesh.material = this.line_material;
 			this.octreeMesh.material.needsUpdate = true;
+		}
+		for (const sn of this.selectedNodes) {
+			for (const smm of this.selectedNodesMesh[sn]) {
+				smm.material = this.line_material;
+				smm.material.needsUpdate = true;
+			}
 		}
 
 		this.mergedGeometry.dispose();
@@ -1873,35 +1889,54 @@ class FEMViewer {
 								}
 							}
 							if (encontrado) {
-								for (
-									let node = 0;
-									node < possible_coords_index.length;
-									node++
-								) {
-									const possible_coord =
-										possible_coords_index[node];
-									const p = multiplyScalar(
-										possible_coord,
-										this.norm
+								let indexx = e.gdls[0][index] / this.nvn;
+								if (this.selectedNodes.includes(indexx)) {
+									this.selectedNodes.splice(
+										this.selectedNodes.indexOf(indexx),
+										1
 									);
-									let geo = new THREE.SphereGeometry(
-										radius,
-										8,
-										8
-									);
-									let mesh = new THREE.Mesh(
-										geo,
-										new THREE.MeshBasicMaterial({
-											color: "white",
-											wireframe: true,
-										})
-									);
-									mesh.translateX(p[0]);
-									mesh.translateY(p[1]);
-									mesh.translateZ(p[2]);
-									this.model.add(mesh);
+									for (const smm of this.selectedNodesMesh[
+										indexx
+									]) {
+										this.model.remove(smm);
+										smm.material.dispose();
+										smm.geometry.dispose();
+									}
+									delete this.selectedNodesMesh[indexx];
+								} else {
+									this.selectedNodes.push(indexx);
+									this.selectedNodesMesh[indexx] = [];
+
+									for (
+										let node = 0;
+										node < possible_coords_index.length;
+										node++
+									) {
+										const possible_coord =
+											possible_coords_index[node];
+										const p = multiplyScalar(
+											possible_coord,
+											this.norm
+										);
+										let geo = new THREE.SphereGeometry(
+											radius,
+											8,
+											8
+										);
+										let mesh = new THREE.LineSegments(
+											new THREE.EdgesGeometry(geo),
+											this.line_material
+										);
+										mesh.translateX(p[0]);
+										mesh.translateY(p[1]);
+										mesh.translateZ(p[2]);
+										this.model.add(mesh);
+										this.selectedNodesMesh[indexx].push(
+											mesh
+										);
+									}
 								}
-								selectedNodes.push(e.gdls[index] / this.nvn);
+
 								break;
 							}
 						}
