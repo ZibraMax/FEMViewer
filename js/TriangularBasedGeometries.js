@@ -1,3 +1,4 @@
+import { subst, add, multiplyScalar, dot, cross } from "./math.js";
 class Triangle {
 	constructor(coords) {
 		this.coords = coords || [
@@ -5,8 +6,61 @@ class Triangle {
 			[1.0, 0.0, 0.5],
 			[0.0, 1.0, 0.5],
 		];
+		let delta1 = subst(coords[1], coords[0]);
+		let delta2 = subst(coords[2], coords[0]);
+		let casi_normal = cross(delta1, delta2);
+		let mag_norm = dot(casi_normal, casi_normal) ** 0.5;
+		this.normal = multiplyScalar(casi_normal, 1 / mag_norm);
 		this.divided = false;
 		this.children = [];
+	}
+
+	extrude(h) {
+		let newCoordsArriba = [];
+		for (const c of this.coords) {
+			let abajo = add(multiplyScalar(this.normal, -h / 2), c);
+			newCoordsArriba.push(abajo);
+		}
+		let newCoordsAbajo = [];
+		for (const c of this.coords) {
+			let arriba = add(multiplyScalar(this.normal, +h / 2), c);
+			newCoordsAbajo.push(arriba);
+		}
+		let newCoordsInter = [];
+		newCoordsInter.push(
+			newCoordsArriba[0],
+			newCoordsAbajo[0],
+			newCoordsArriba[1]
+		);
+		newCoordsInter.push(
+			newCoordsAbajo[0],
+			newCoordsAbajo[1],
+			newCoordsArriba[1]
+		);
+
+		newCoordsInter.push(
+			newCoordsArriba[1],
+			newCoordsAbajo[1],
+			newCoordsArriba[2]
+		);
+		newCoordsInter.push(
+			newCoordsAbajo[1],
+			newCoordsAbajo[2],
+			newCoordsArriba[2]
+		);
+
+		newCoordsInter.push(
+			newCoordsArriba[2],
+			newCoordsAbajo[2],
+			newCoordsArriba[0]
+		);
+		newCoordsInter.push(
+			newCoordsAbajo[2],
+			newCoordsAbajo[0],
+			newCoordsArriba[0]
+		);
+
+		return [...newCoordsArriba, ...newCoordsAbajo, ...newCoordsInter];
 	}
 
 	divide(n = 1) {

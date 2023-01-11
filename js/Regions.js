@@ -1,6 +1,14 @@
-import { PlaneGeometry, CylinderGeometry } from "./build/three.module.js";
+import {
+	PlaneGeometry,
+	CylinderGeometry,
+	BoxGeometry,
+	BufferGeometry,
+	BufferAttribute,
+} from "./build/three.module.js";
+import { Quadrilateral } from "./Elements.js";
 import { Quadrant3D } from "./Octree.js";
 import { dot, squared_distance, subst } from "./math.js";
+import { Triangle } from "./TriangularBasedGeometries.js";
 class Region {
 	constructor() {
 		this.nodes = [];
@@ -8,12 +16,37 @@ class Region {
 	setNodesOfRegion(nodes, tol = 1 * 10 ** -6) {
 		this.nodes = [];
 		for (let i = 0; i < nodes.length; i++) {
-			const p1 = nodes[i];
+			const p = nodes[i];
 			if (this.isBetween(p, tol)) {
-				this.nodes.push(p);
+				this.nodes.push({ _xcenter: p, index: i });
 			}
 		}
 	}
+}
+
+function extrudeTriangularPlane(p1, p2, p3, h) {
+	const t = new Triangle([p1, p2, p3]);
+	const coordinates = t.extrude(h).flat();
+	const vertices = new Float32Array(coordinates);
+	const geometry = new BufferGeometry();
+	geometry.setAttribute("position", new BufferAttribute(vertices, 3));
+	geometry.computeVertexNormals();
+	return geometry;
+}
+
+function extrudeRectangularPlane(p1, p2, p3, p4, h) {
+	const t1 = new Triangle([p1, p2, p3]);
+	const t2 = new Triangle([p3, p2, p4]);
+	t2.normal = t1.normal;
+	const c1 = t1.extrude(h).flat();
+	const c2 = t2.extrude(h).flat();
+	const coordinates = [...c1, ...c2];
+
+	const vertices = new Float32Array(coordinates);
+	const geometry = new BufferGeometry();
+	geometry.setAttribute("position", new BufferAttribute(vertices, 3));
+	geometry.computeVertexNormals();
+	return geometry;
 }
 
 class LineRegion extends Region {
@@ -21,11 +54,11 @@ class LineRegion extends Region {
 		super();
 		this.p1 = p1;
 		this.p2 = p2;
-		this.l = squared_distance(this.p1, this.p2);
+		this.l = squared_distance(this.p1, this.p2) ** 0.5;
 	}
 	isBetween(p, tol) {
-		let d1 = squared_distance(p, this.p1);
-		let d2 = squared_distance(p, this.p2);
+		let d1 = squared_distance(p, this.p1) ** 0.5;
+		let d2 = squared_distance(p, this.p2) ** 0.5;
 		let d = d1 + d2;
 		let delta = Math.abs(d - this.l);
 		if (delta <= tol) {
@@ -60,7 +93,6 @@ class LineRegion extends Region {
 			}
 			return geo;
 		} else if (ndim == 2) {
-			let geo = new PlaneGeometry(1, 1);
 			let points = [];
 			points.push([
 				this.p1[0] * norm,
@@ -75,19 +107,20 @@ class LineRegion extends Region {
 			points.push([
 				this.p1[0] * norm,
 				this.p1[1] * norm,
-				this.p1[2] * norm + size / 20,
+				this.p1[2] * norm + (size / 20) * norm,
 			]);
 			points.push([
 				this.p2[0] * norm,
 				this.p2[1] * norm,
-				this.p2[2] * norm + size / 20,
+				this.p2[2] * norm + (size / 20) * norm,
 			]);
-
-			for (let i = 0; i < geo.attributes.position.count; i++) {
-				geo.attributes.position.setX(i, points[i][0]);
-				geo.attributes.position.setY(i, points[i][1]);
-				geo.attributes.position.setZ(i, points[i][2]);
-			}
+			let geo = new extrudeRectangularPlane(
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				0.005
+			);
 
 			return geo;
 		}

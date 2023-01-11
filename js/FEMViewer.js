@@ -811,6 +811,11 @@ class FEMViewer {
 			let p1 = this.nodes[this.selectedNodes[0]];
 			let p2 = this.nodes[this.selectedNodes[1]];
 			let region = new LineRegion(p1, p2);
+			this.deselectAllNodes();
+			region.setNodesOfRegion(this.nodes);
+			for (const node of region.nodes) {
+				this.selectNode(node["index"]);
+			}
 			let geometry = region.giveGeometry(this.norm, this.size, this.ndim);
 			let material = this.material;
 			material.side = THREE.DoubleSide;
@@ -826,7 +831,6 @@ class FEMViewer {
 				"Regions can only be created with at least 2 nodes"
 			);
 		}
-		this.deselectAllNodes();
 	}
 
 	deselectAllNodes() {
@@ -1842,6 +1846,50 @@ class FEMViewer {
 			this.bufferLines.push(e.line_geometry);
 		}
 	}
+	selectNode(indexx) {
+		let radius = 0.005 / 2;
+		if (this.selectedNodes.includes(indexx)) {
+			this.selectedNodes.splice(this.selectedNodes.indexOf(indexx), 1);
+			for (const smm of this.selectedNodesMesh[indexx]) {
+				this.model.remove(smm);
+				smm.material.dispose();
+				smm.geometry.dispose();
+			}
+			delete this.selectedNodesMesh[indexx];
+		} else {
+			this.selectedNodes.push(indexx);
+			this.selectedNodesMesh[indexx] = [];
+			let p = [...this.nodes[indexx]];
+			let possible_coords_index = [];
+			possible_coords_index.push(p);
+			if (this.ndim == 1) {
+				possible_coords_index.push([
+					p[0],
+					p[1] + this.size / 20,
+					p[2] + this.size / 20,
+				]);
+				possible_coords_index.push([p[0], p[1] + this.size / 20, p[2]]);
+				possible_coords_index.push([p[0], p[1], p[2] + this.size / 20]);
+			} else if (this.ndim == 2) {
+				possible_coords_index.push([p[0], p[1], p[2] + this.size / 20]);
+			}
+
+			for (let node = 0; node < possible_coords_index.length; node++) {
+				const possible_coord = possible_coords_index[node];
+				const p = multiplyScalar(possible_coord, this.norm);
+				let geo = new THREE.SphereGeometry(radius, 8, 8);
+				let mesh = new THREE.LineSegments(
+					new THREE.EdgesGeometry(geo),
+					this.line_material
+				);
+				mesh.translateX(p[0]);
+				mesh.translateY(p[1]);
+				mesh.translateZ(p[2]);
+				this.model.add(mesh);
+				this.selectedNodesMesh[indexx].push(mesh);
+			}
+		}
+	}
 	onDocumentMouseDown(event) {
 		if (this.loaded) {
 			if (this.clickMode != "Nothing") {
@@ -1932,53 +1980,7 @@ class FEMViewer {
 							}
 							if (encontrado) {
 								let indexx = e.gdls[0][index] / this.nvn;
-								if (this.selectedNodes.includes(indexx)) {
-									this.selectedNodes.splice(
-										this.selectedNodes.indexOf(indexx),
-										1
-									);
-									for (const smm of this.selectedNodesMesh[
-										indexx
-									]) {
-										this.model.remove(smm);
-										smm.material.dispose();
-										smm.geometry.dispose();
-									}
-									delete this.selectedNodesMesh[indexx];
-								} else {
-									this.selectedNodes.push(indexx);
-									this.selectedNodesMesh[indexx] = [];
-
-									for (
-										let node = 0;
-										node < possible_coords_index.length;
-										node++
-									) {
-										const possible_coord =
-											possible_coords_index[node];
-										const p = multiplyScalar(
-											possible_coord,
-											this.norm
-										);
-										let geo = new THREE.SphereGeometry(
-											radius,
-											8,
-											8
-										);
-										let mesh = new THREE.LineSegments(
-											new THREE.EdgesGeometry(geo),
-											this.line_material
-										);
-										mesh.translateX(p[0]);
-										mesh.translateY(p[1]);
-										mesh.translateZ(p[2]);
-										this.model.add(mesh);
-										this.selectedNodesMesh[indexx].push(
-											mesh
-										);
-									}
-								}
-
+								this.selectNode(indexx);
 								break;
 							}
 						}
