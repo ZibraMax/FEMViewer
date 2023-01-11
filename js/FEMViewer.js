@@ -301,6 +301,7 @@ class FEMViewer {
 			this.prevSolution();
 		} else if (keyCode == 27) {
 			this.destroy_element_views();
+			this.unselectAllNodes();
 		} else if (keyCode == 77) {
 			this.menuCerrado = !this.menuCerrado;
 			this.updateMenuCerrado();
@@ -807,10 +808,28 @@ class FEMViewer {
 	}
 
 	createRegion() {
+		let region;
 		if (this.selectedNodes.length == 2) {
 			let p1 = this.nodes[this.selectedNodes[0]];
 			let p2 = this.nodes[this.selectedNodes[1]];
-			let region = new LineRegion(p1, p2);
+			region = new LineRegion(p1, p2);
+		} else if (this.selectedNodes.length == 3) {
+			let p1 = this.nodes[this.selectedNodes[0]];
+			let p2 = this.nodes[this.selectedNodes[1]];
+			let p3 = this.nodes[this.selectedNodes[2]];
+			region = new TriangularPlaneRegion(p1, p2, p3);
+		} else if (this.selectedNodes.length == 4) {
+			let p1 = this.nodes[this.selectedNodes[0]];
+			let p2 = this.nodes[this.selectedNodes[1]];
+			let p3 = this.nodes[this.selectedNodes[2]];
+			let p4 = this.nodes[this.selectedNodes[3]];
+			region = new RectangularPlaneRegion(p1, p2, p3, p4);
+		} else {
+			this.notiBar.sendMessage(
+				"Regions can only be created with at least 2 nodes"
+			);
+		}
+		if (region) {
 			this.deselectAllNodes();
 			region.setNodesOfRegion(this.nodes);
 			for (const node of region.nodes) {
@@ -826,10 +845,6 @@ class FEMViewer {
 			);
 			this.model.add(mesh);
 			this.model.add(mesh2);
-		} else {
-			this.notiBar.sendMessage(
-				"Regions can only be created with at least 2 nodes"
-			);
 		}
 	}
 
@@ -1844,6 +1859,11 @@ class FEMViewer {
 		this.bufferLines = [];
 		for (const e of this.elements) {
 			this.bufferLines.push(e.line_geometry);
+		}
+	}
+	unselectAllNodes() {
+		for (const sn of [...this.selectedNodes]) {
+			this.selectNode(sn);
 		}
 	}
 	selectNode(indexx) {

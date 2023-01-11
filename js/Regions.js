@@ -7,7 +7,7 @@ import {
 } from "./build/three.module.js";
 import { Quadrilateral } from "./Elements.js";
 import { Quadrant3D } from "./Octree.js";
-import { dot, squared_distance, subst } from "./math.js";
+import { dot, squared_distance, subst, multiplyScalar, cross } from "./math.js";
 import { Triangle } from "./TriangularBasedGeometries.js";
 class Region {
 	constructor() {
@@ -114,7 +114,7 @@ class LineRegion extends Region {
 				this.p2[1] * norm,
 				this.p2[2] * norm + (size / 20) * norm,
 			]);
-			let geo = new extrudeRectangularPlane(
+			let geo = extrudeRectangularPlane(
 				points[0],
 				points[1],
 				points[2],
@@ -145,12 +145,21 @@ class TriangularPlaneRegion extends Region {
 		return false;
 	}
 	giveGeometry(norm) {
-		return 0.0;
+		return extrudeTriangularPlane(
+			multiplyScalar(this.p1, norm),
+			multiplyScalar(this.p2, norm),
+			multiplyScalar(this.p3, norm),
+			0.005
+		);
 	}
 }
 class RectangularPlaneRegion extends Region {
 	constructor(p1, p2, p3, p4) {
 		super();
+		this.p1 = p1;
+		this.p2 = p2;
+		this.p3 = p3;
+		this.p4 = p4;
 		this.plane1 = new TriangularPlaneRegion(p1, p2, p3);
 		this.plane2 = new TriangularPlaneRegion(p1, p3, p4);
 	}
@@ -158,7 +167,13 @@ class RectangularPlaneRegion extends Region {
 		return this.plane1.isBetween(p, tol) || this.plane2.isBetween(p, tol);
 	}
 	giveGeometry(norm) {
-		return 0.0;
+		return extrudeRectangularPlane(
+			multiplyScalar(this.p1, norm),
+			multiplyScalar(this.p2, norm),
+			multiplyScalar(this.p3, norm),
+			multiplyScalar(this.p4, norm),
+			0.005
+		);
 	}
 }
 
