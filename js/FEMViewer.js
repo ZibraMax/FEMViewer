@@ -269,8 +269,6 @@ class FEMViewer {
 		this.octreeMesh = undefined;
 		this.showOctree = false;
 		this.regionModel.visible = true;
-		this.regionModel.add(this.regionModelContours);
-		this.regionModel.add(this.regionModelGeometries);
 
 		this.menuCerrado = true;
 
@@ -691,7 +689,8 @@ class FEMViewer {
 				smm.geometry.dispose();
 			}
 		}
-		for (const reg of this.regions) {
+		for (let i = 0; i < this.regions.length; i++) {
+			let reg = this.regions[i];
 			this.regionModelGeometries.remove(reg.mesh);
 			this.regionModelContours.remove(reg.edges);
 			reg.mesh.material.dispose();
@@ -699,6 +698,7 @@ class FEMViewer {
 			reg.edges.material.dispose();
 			reg.edges.geometry.dispose();
 		}
+		this.regions = [];
 		this.selectedNodes = [];
 		this.selectedNodesMesh = {};
 
@@ -1070,7 +1070,7 @@ class FEMViewer {
 		this.notiBar.setMessage("Reloading model..." + "⌛");
 		await this.loadJSON(this.filename);
 		this.notiBar.resetMessage();
-		this.init(false);
+		await this.init(false);
 		this.after_load();
 	}
 
@@ -1524,6 +1524,8 @@ class FEMViewer {
 
 		this.updateU();
 		this.model.add(this.mesh);
+		this.regionModel.add(this.regionModelContours);
+		this.regionModel.add(this.regionModelGeometries);
 		this.model.add(this.regionModel);
 
 		this.scene.add(this.model);
