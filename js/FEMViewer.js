@@ -298,6 +298,31 @@ class FEMViewer {
 		this.histogramModal = new Modal(this.container, "Histogram view");
 		this.histogramModal.content.innerHTML =
 			'<div id="histogram" style="width: 100%; height: 85%"></div>';
+
+		this.borderConditionModal = new Modal(
+			this.container,
+			"Border condition"
+		);
+		let contentt = document.createElement("div");
+		let input = document.createElement("input");
+		let cbncbe = document.createElement("select");
+		let a1 = document.createElement("option");
+		a1.innerHTML = "Essential";
+		cbncbe.append(a1);
+		let a2 = document.createElement("option");
+		a2.innerHTML = "Natural";
+		cbncbe.append(a2);
+		let nvn = document.createElement("select");
+		for (let i = 0; i < 3; i++) {
+			let n1 = document.createElement("option");
+			n1.innerHTML = i + 1;
+			nvn.append(n1);
+		}
+
+		contentt.appendChild(input);
+		contentt.appendChild(cbncbe);
+		contentt.appendChild(nvn);
+		this.borderConditionModal.addContent(contentt);
 	}
 
 	onDocumentKeyDown(event) {
@@ -462,6 +487,10 @@ class FEMViewer {
 	modalManager3() {
 		this.histogramModal.show();
 		this.createHistogram2();
+		this.gui.close();
+	}
+	modalManager4() {
+		this.borderConditionModal.show();
 		this.gui.close();
 	}
 	createHistogram() {
@@ -921,6 +950,7 @@ class FEMViewer {
 			.add(this, "downloadAsJson")
 			.name("Donwload JSON file");
 		this.settingsFolder.add(this, "createRegion").name("Create Region");
+		this.settingsFolder.add(this, "modalManager4").name("Assign BC");
 
 		this.settingsFolder.add(this.gh, "visible").listen().name("Axis");
 		this.settingsFolder.add(this, "rot").name("Rotation").listen();
