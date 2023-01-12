@@ -287,13 +287,6 @@ class FEMViewer {
 
 		this.settings();
 		this.createListeners();
-		let geo = new THREE.SphereGeometry(this.nodeSearchRadius / 2, 8, 8);
-		this.meshSelectedNode = new THREE.LineSegments(
-			new THREE.EdgesGeometry(geo),
-			this.line_material
-		);
-		this.meshSelectedNode.visible = false;
-		this.model.add(this.meshSelectedNode);
 	}
 	createModals() {
 		this.JSONModal = new Modal(this.container, "File input");
@@ -1562,6 +1555,13 @@ class FEMViewer {
 
 		this.notiBar.setMessage("Drawing model..." + "⌛");
 		await allowUpdate();
+		let geo = new THREE.SphereGeometry(this.nodeSearchRadius / 2, 8, 8);
+		this.meshSelectedNode = new THREE.LineSegments(
+			new THREE.EdgesGeometry(geo),
+			this.line_material
+		);
+		this.meshSelectedNode.visible = false;
+		this.model.add(this.meshSelectedNode);
 		this.calculate_jacobians_worker();
 		this.notiBar.setMessage("Done!");
 		await allowUpdate();
@@ -1589,11 +1589,27 @@ class FEMViewer {
 		};
 	}
 
+	giveRegionsAsCoords() {
+		let r = [];
+		for (const reg of this.regions) {
+			let region = [];
+			for (const cord of reg.coordinates) {
+				let coordenada = [];
+				for (let i = 0; i < this.ndim; i++) {
+					coordenada.push(cord[i] + this.dimens[i]);
+				}
+				region.push(coordenada);
+			}
+			r.push(region);
+		}
+		return r;
+	}
+
 	async downloadAsJson() {
 		const response = await fetch(this.json_path);
 		const jsondata = await response.json();
 		jsondata["border_elements"] = this.border_elements;
-		// TODO jsondata["regions"] = this.giveRegionsAsCoords();
+		jsondata["regions"] = this.giveRegionsAsCoords();
 		var dataStr =
 			"data:text/json;charset=utf-8," +
 			encodeURIComponent(JSON.stringify(jsondata));

@@ -62,7 +62,11 @@ class Triangle {
 			);
 		}
 
-		return [...newCoordsArriba, ...newCoordsAbajo, ...newCoordsInter];
+		return [
+			...[...newCoordsArriba].reverse(),
+			...newCoordsAbajo,
+			...newCoordsInter,
+		];
 	}
 
 	divide(n = 1) {

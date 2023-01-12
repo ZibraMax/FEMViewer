@@ -20,9 +20,10 @@ import {
 } from "./math.js";
 import { Triangle } from "./TriangularBasedGeometries.js";
 class Region {
-	constructor() {
+	constructor(coordinates) {
 		this.nodes = [];
 		this.selected = false;
+		this.coordinates = coordinates;
 	}
 	setNodesOfRegion(nodes, tol = 1 * 10 ** -6) {
 		this.nodes = [];
@@ -48,7 +49,6 @@ function extrudeTriangularPlane(p1, p2, p3, h) {
 function extrudeRectangularPlane(p1, p2, p3, p4, h) {
 	const t1 = new Triangle([p1, p2, p3]);
 	const t2 = new Triangle([p3, p4, p2].reverse());
-	t2.normal = t1.normal;
 	const c1 = t1.extrude(h, true).flat();
 	const c2 = t2.extrude(h, true).flat();
 	const coordinates = [...c1, ...c2];
@@ -62,7 +62,7 @@ function extrudeRectangularPlane(p1, p2, p3, p4, h) {
 
 class LineRegion extends Region {
 	constructor(p1, p2) {
-		super();
+		super([p1, p2]);
 		this.p1 = p1;
 		this.p2 = p2;
 		this.l = squared_distance(this.p1, this.p2) ** 0.5;
@@ -139,8 +139,8 @@ class LineRegion extends Region {
 }
 
 class Region2D extends Region {
-	constructor() {
-		super();
+	constructor(coordinates) {
+		super(coordinates);
 	}
 	createProjections() {
 		this.coords = [];
@@ -184,7 +184,7 @@ class Region2D extends Region {
 
 class TriangularPlaneRegion extends Region2D {
 	constructor(p1, p2, p3) {
-		super();
+		super([p1, p2, p3]);
 		this.p1 = p1;
 		this.p2 = p2;
 		this.p3 = p3;
@@ -255,7 +255,7 @@ class TriangularPlaneRegion extends Region2D {
 }
 class RectangularPlaneRegion extends Region2D {
 	constructor(p1, p2, p3, p4) {
-		super();
+		super([p1, p2, p3, p4]);
 		this.p1 = p1;
 		this.p2 = p2;
 		this.p3 = p3;
