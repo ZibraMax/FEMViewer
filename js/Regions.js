@@ -12,6 +12,7 @@ import { Triangle } from "./TriangularBasedGeometries.js";
 class Region {
 	constructor() {
 		this.nodes = [];
+		this.selected = false;
 	}
 	setNodesOfRegion(nodes, tol = 1 * 10 ** -6) {
 		this.nodes = [];

@@ -1170,6 +1170,7 @@ class FEMViewer {
 			this.material = new THREE.MeshBasicMaterial({
 				vertexColors: true,
 				wireframe: this.wireframe,
+				side: THREE.DoubleSide,
 			});
 			this.light2.intensity = 1.0;
 			this.light.intensity = 0.0;
@@ -1938,16 +1939,21 @@ class FEMViewer {
 			this.selectNode(sn);
 		}
 	}
-	selectNode(indexx) {
+	selectNode(indexx, reselect) {
 		let radius = 0.005 / 2;
 		if (this.selectedNodes.includes(indexx)) {
-			this.selectedNodes.splice(this.selectedNodes.indexOf(indexx), 1);
-			for (const smm of this.selectedNodesMesh[indexx]) {
-				this.model.remove(smm);
-				smm.material.dispose();
-				smm.geometry.dispose();
+			if (!reselect) {
+				this.selectedNodes.splice(
+					this.selectedNodes.indexOf(indexx),
+					1
+				);
+				for (const smm of this.selectedNodesMesh[indexx]) {
+					this.model.remove(smm);
+					smm.material.dispose();
+					smm.geometry.dispose();
+				}
+				delete this.selectedNodesMesh[indexx];
 			}
-			delete this.selectedNodesMesh[indexx];
 		} else {
 			this.selectedNodes.push(indexx);
 			this.selectedNodesMesh[indexx] = [];
@@ -1999,8 +2005,9 @@ class FEMViewer {
 					if (regionsintersects.length > 0) {
 						let index = regionsintersects[0].object.userData["id"];
 						let region = this.regions[index];
+						region.selected = !region.selected;
 						for (const node of region.nodes) {
-							this.selectNode(node["index"]);
+							this.selectNode(node["index"], region.selected);
 						}
 					}
 				} else {
