@@ -180,6 +180,7 @@ class FEMViewer {
 
 		this.selectedNodes = [];
 		this.regions = [];
+		this.nodeSearchRadius = 0.01;
 
 		this.container = container;
 		let canvas = document.createElement("canvas");
@@ -253,6 +254,7 @@ class FEMViewer {
 		this.bufferGeometries = [];
 		this.bufferLines = [];
 		this.model = new THREE.Object3D();
+
 		this.regionModel = new THREE.Object3D();
 		this.regionModelContours = new THREE.Object3D();
 		this.regionModelGeometries = new THREE.Object3D();
@@ -285,6 +287,13 @@ class FEMViewer {
 
 		this.settings();
 		this.createListeners();
+		let geo = new THREE.SphereGeometry(this.nodeSearchRadius / 2, 8, 8);
+		this.meshSelectedNode = new THREE.LineSegments(
+			new THREE.EdgesGeometry(geo),
+			this.line_material
+		);
+		this.meshSelectedNode.visible = false;
+		this.model.add(this.meshSelectedNode);
 	}
 	createModals() {
 		this.JSONModal = new Modal(this.container, "File input");
@@ -333,7 +342,10 @@ class FEMViewer {
 		);
 
 		this.canvas.addEventListener("mousedown", () => (GOBAL_DRAG = false));
-		this.canvas.addEventListener("mousemove", () => (GOBAL_DRAG = true));
+		this.canvas.addEventListener("mousemove", (e) => {
+			GOBAL_DRAG = true;
+			this.onDocumentMouseMove(e);
+		});
 		this.canvas.addEventListener("mouseup", (e) => {
 			GOBAL_DRAG ? "drag" : this.onDocumentMouseDown(e);
 		});
@@ -857,7 +869,8 @@ class FEMViewer {
 			region.geometry = region.giveGeometry(
 				this.norm,
 				this.size,
-				this.ndim
+				this.ndim,
+				this.nodeSearchRadius
 			);
 			region.mesh = new THREE.Mesh(region.geometry, this.material);
 			region.mesh.userData = { id: id };
@@ -1942,7 +1955,7 @@ class FEMViewer {
 		}
 	}
 	selectNode(indexx, reselect) {
-		let radius = 0.005 / 2;
+		let radius = this.nodeSearchRadius / 2;
 		if (this.selectedNodes.includes(indexx)) {
 			if (!reselect) {
 				this.selectedNodes.splice(
@@ -2068,7 +2081,7 @@ class FEMViewer {
 								}
 							}
 							let encontrado = false;
-							let radius = 0.005 / 2;
+							let radius = this.nodeSearchRadius / 2;
 							for (
 								let index = 0;
 								index < possible_coords.length;
@@ -2102,6 +2115,87 @@ class FEMViewer {
 						}
 						this.updateGeometry();
 					}
+				}
+			}
+		}
+	}
+	onDocumentMouseMove(event) {
+		if (this.loaded) {
+			if (this.clickMode == "Detect nodes") {
+				event.preventDefault();
+				const mouse3D = new THREE.Vector2(
+					(event.clientX / window.innerWidth) * 2 - 1,
+					-(event.clientY / window.innerHeight) * 2 + 1
+				);
+				this.raycaster.setFromCamera(mouse3D, this.camera);
+				const intersects = this.raycaster.intersectObjects(
+					this.invisibleModel.children
+				);
+				if (intersects.length > 0) {
+					const i = intersects[0].object.userData.elementId;
+					const e = this.elements[i];
+					let vector_point = [...intersects[0].point];
+					let possible_coords = [];
+					for (let k = 0; k < e.coords.length; k++) {
+						let p = [...e.coords[k]];
+						possible_coords.push([p]);
+					}
+					if (this.ndim == 1 || this.ndim == 2) {
+						for (let k = 0; k < e.coords.length; k++) {
+							let p = [...e.coords[k]];
+							p[2] += this.size / 20;
+							possible_coords[k].push(p);
+						}
+						if (this.ndim == 1) {
+							for (let k = 0; k < e.coords.length; k++) {
+								let p = [...e.coords[k]];
+								p[1] += this.size / 20;
+								p[2] += this.size / 20;
+								possible_coords[k].push(p);
+								p = e.coords[k];
+								p[1] += this.size / 20;
+								possible_coords[k].push(p);
+							}
+						}
+					}
+					let encontrado = false;
+					let radius = this.nodeSearchRadius / 2;
+					for (
+						let index = 0;
+						index < possible_coords.length;
+						index++
+					) {
+						let p;
+						let possible_coords_index = possible_coords[index];
+						for (
+							let node = 0;
+							node < possible_coords_index.length;
+							node++
+						) {
+							const possible_coord = possible_coords_index[node];
+							p = multiplyScalar(possible_coord, this.norm);
+							let d = squared_distance(p, vector_point);
+							if (d <= radius ** 2) {
+								encontrado = true;
+								break;
+							}
+						}
+						if (encontrado) {
+							this.meshSelectedNode.translateX(
+								p[0] - this.meshSelectedNode.position.x
+							);
+							this.meshSelectedNode.translateY(
+								p[1] - this.meshSelectedNode.position.y
+							);
+							this.meshSelectedNode.translateZ(
+								p[2] - this.meshSelectedNode.position.z
+							);
+							this.meshSelectedNode.visible = true;
+							break;
+						}
+						this.meshSelectedNode.visible = false;
+					}
+					this.updateGeometry();
 				}
 			}
 		}

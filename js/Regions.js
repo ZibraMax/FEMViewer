@@ -5,6 +5,7 @@ import {
 	BufferGeometry,
 	BufferAttribute,
 } from "./build/three.module.js";
+import { mergeBufferGeometries } from "./build/BufferGeometryUtils.js";
 import { Quadrilateral } from "./Elements.js";
 import { Quadrant3D } from "./Octree.js";
 import {
@@ -46,10 +47,10 @@ function extrudeTriangularPlane(p1, p2, p3, h) {
 
 function extrudeRectangularPlane(p1, p2, p3, p4, h) {
 	const t1 = new Triangle([p1, p2, p3]);
-	const t2 = new Triangle([p3, p2, p4]);
+	const t2 = new Triangle([p3, p4, p2].reverse());
 	t2.normal = t1.normal;
-	const c1 = t1.extrude(h).flat();
-	const c2 = t2.extrude(h).flat();
+	const c1 = t1.extrude(h, true).flat();
+	const c2 = t2.extrude(h, true).flat();
 	const coordinates = [...c1, ...c2];
 
 	const vertices = new Float32Array(coordinates);
@@ -76,8 +77,8 @@ class LineRegion extends Region {
 		}
 		return false;
 	}
-	giveGeometry(norm, size, ndim) {
-		let rt = 0.005 / 2;
+	giveGeometry(norm, size, ndim, radius) {
+		let rt = radius / 2;
 		if (ndim == 3) {
 			let geo = new CylinderGeometry(rt, rt, 1, 10, 1);
 			for (let i = 0; i < geo.attributes.position.count; i++) {
@@ -129,7 +130,7 @@ class LineRegion extends Region {
 				points[1],
 				points[2],
 				points[3],
-				0.005
+				radius
 			);
 
 			return geo;
@@ -225,13 +226,31 @@ class TriangularPlaneRegion extends Region2D {
 			this.l3.isBetween(p, tol)
 		);
 	}
-	giveGeometry(norm) {
-		return extrudeTriangularPlane(
+	giveGeometry(norm, size, ndim, radius) {
+		let geo1 = extrudeTriangularPlane(
 			multiplyScalar(this.p1, norm),
 			multiplyScalar(this.p2, norm),
 			multiplyScalar(this.p3, norm),
-			0.005
+			radius
 		);
+		if (ndim == 2 || ndim == 1) {
+			let p1 = [...this.p1];
+			let p2 = [...this.p2];
+			let p3 = [...this.p3];
+
+			p1[2] += size / 20;
+			p2[2] += size / 20;
+			p3[2] += size / 20;
+
+			let geo2 = extrudeTriangularPlane(
+				multiplyScalar(p1, norm),
+				multiplyScalar(p2, norm),
+				multiplyScalar(p3, norm),
+				radius
+			);
+			return mergeBufferGeometries([geo1, geo2]);
+		}
+		return geo1;
 	}
 }
 class RectangularPlaneRegion extends Region2D {
@@ -250,14 +269,35 @@ class RectangularPlaneRegion extends Region2D {
 	isInPlane(p, tol) {
 		return this.plane1.isInPlane(p, tol) || this.plane2.isInPlane(p, tol);
 	}
-	giveGeometry(norm) {
-		return extrudeRectangularPlane(
+	giveGeometry(norm, size, ndim, radius) {
+		let geo1 = extrudeRectangularPlane(
 			multiplyScalar(this.p1, norm),
 			multiplyScalar(this.p2, norm),
 			multiplyScalar(this.p4, norm),
 			multiplyScalar(this.p3, norm),
-			0.005
+			radius
 		);
+		if (ndim == 2 || ndim == 1) {
+			let p1 = [...this.p1];
+			let p2 = [...this.p2];
+			let p3 = [...this.p3];
+			let p4 = [...this.p4];
+
+			p1[2] += size / 20;
+			p2[2] += size / 20;
+			p3[2] += size / 20;
+			p4[2] += size / 20;
+
+			let geo2 = extrudeRectangularPlane(
+				multiplyScalar(p1, norm),
+				multiplyScalar(p2, norm),
+				multiplyScalar(p4, norm),
+				multiplyScalar(p3, norm),
+				radius
+			);
+			return mergeBufferGeometries([geo1, geo2]);
+		}
+		return geo1;
 	}
 }
 

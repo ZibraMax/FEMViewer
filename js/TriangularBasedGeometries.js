@@ -15,7 +15,7 @@ class Triangle {
 		this.children = [];
 	}
 
-	extrude(h) {
+	extrude(h, a) {
 		let newCoordsArriba = [];
 		for (const c of this.coords) {
 			let abajo = add(multiplyScalar(this.normal, -h / 2), c);
@@ -49,16 +49,18 @@ class Triangle {
 			newCoordsArriba[2]
 		);
 
-		newCoordsInter.push(
-			newCoordsArriba[2],
-			newCoordsAbajo[2],
-			newCoordsArriba[0]
-		);
-		newCoordsInter.push(
-			newCoordsAbajo[2],
-			newCoordsAbajo[0],
-			newCoordsArriba[0]
-		);
+		if (!a) {
+			newCoordsInter.push(
+				newCoordsArriba[2],
+				newCoordsAbajo[2],
+				newCoordsArriba[0]
+			);
+			newCoordsInter.push(
+				newCoordsAbajo[2],
+				newCoordsAbajo[0],
+				newCoordsArriba[0]
+			);
+		}
 
 		return [...newCoordsArriba, ...newCoordsAbajo, ...newCoordsInter];
 	}
