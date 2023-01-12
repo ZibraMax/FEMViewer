@@ -268,7 +268,7 @@ class FEMViewer {
 		this.show_model = true;
 		this.octreeMesh = undefined;
 		this.showOctree = false;
-		this.regionModel.visible = true;
+		this.regionModel.visible = false;
 
 		this.menuCerrado = true;
 
@@ -1180,6 +1180,7 @@ class FEMViewer {
 					color: FOCUS_COLOR,
 					emissive: FOCUS_COLOR,
 					wireframe: this.wireframe,
+					side: THREE.DoubleSide,
 				});
 				this.light2.intensity = 0.0;
 				this.light.intensity = 1.0;
@@ -1187,6 +1188,7 @@ class FEMViewer {
 				this.material = new THREE.MeshBasicMaterial({
 					color: FOCUS_COLOR,
 					wireframe: this.wireframe,
+					side: THREE.DoubleSide,
 				});
 				this.light2.intensity = 1.0;
 				this.light.intensity = 0.0;

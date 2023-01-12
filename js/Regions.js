@@ -7,7 +7,16 @@ import {
 } from "./build/three.module.js";
 import { Quadrilateral } from "./Elements.js";
 import { Quadrant3D } from "./Octree.js";
-import { dot, squared_distance, subst, multiplyScalar, cross } from "./math.js";
+import {
+	dot,
+	squared_distance,
+	subst,
+	multiplyScalar,
+	cross,
+	normVector,
+	multiply,
+	transpose,
+} from "./math.js";
 import { Triangle } from "./TriangularBasedGeometries.js";
 class Region {
 	constructor() {
@@ -127,23 +136,94 @@ class LineRegion extends Region {
 		}
 	}
 }
-class TriangularPlaneRegion extends Region {
+
+class Region2D extends Region {
+	constructor() {
+		super();
+	}
+	createProjections() {
+		this.coords = [];
+		for (const c of this._coords) {
+			this.coords.push(
+				transpose(multiply(this.transfMatrix, transpose([c])))[0]
+			);
+		}
+	}
+	pointInPlolygon(p) {
+		let vs = this.coords;
+		var x = p[0],
+			y = p[1];
+
+		var inside = false;
+		for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+			var xi = vs[i][0],
+				yi = vs[i][1];
+			var xj = vs[j][0],
+				yj = vs[j][1];
+
+			var intersect =
+				yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+			if (intersect) inside = !inside;
+		}
+
+		return inside;
+	}
+	setNodesOfRegion(nodes, tol = 1 * 10 ** -6) {
+		this.nodes = [];
+		for (let i = 0; i < nodes.length; i++) {
+			const p = nodes[i];
+			if (this.isInPlane(p, tol)) {
+				if (this.isBetween(p, tol)) {
+					this.nodes.push({ _xcenter: p, index: i });
+				}
+			}
+		}
+	}
+}
+
+class TriangularPlaneRegion extends Region2D {
 	constructor(p1, p2, p3) {
 		super();
 		this.p1 = p1;
 		this.p2 = p2;
 		this.p3 = p3;
-		this.norm = cross(subst(p3, p1), subst(p2, p1));
+		this.l1 = new LineRegion(p1, p2);
+		this.l2 = new LineRegion(p2, p3);
+		this.l3 = new LineRegion(p3, p1);
+		this.u1 = subst(p3, p1);
+		this.v2 = subst(p2, p1);
+		this.norm = cross(this.u1, this.v2);
 		this.p0 = this.p1;
+		let proju1v2 = multiplyScalar(
+			this.u1,
+			dot(this.u1, this.v2) / dot(this.u1, this.u1)
+		);
+		this.u2 = subst(this.v2, proju1v2);
+
+		//Normalizar u1,
+		this.u1 = normVector(this.u1);
+		this.u2 = normVector(this.u2);
+		this.transfMatrix = [this.u1, this.u2];
+		this._coords = [p1, p2, p3];
+		this.createProjections();
 	}
-	isBetween(p, tol) {
+	isInPlane(p, tol) {
 		let pmp0 = subst(p, this.p0);
-		let mag = dot(this.nodes, pmp0);
-		let delta = dot(mag, mag);
+		let delta = Math.abs(dot(this.norm, pmp0));
 		if (delta <= tol) {
 			return true;
 		}
 		return false;
+	}
+	isBetween(p, tol) {
+		let p2 = multiply(this.transfMatrix, transpose([p]));
+		let r = this.pointInPlolygon(p2);
+		return (
+			r ||
+			this.l1.isBetween(p, tol) ||
+			this.l2.isBetween(p, tol) ||
+			this.l3.isBetween(p, tol)
+		);
 	}
 	giveGeometry(norm) {
 		return extrudeTriangularPlane(
@@ -154,7 +234,7 @@ class TriangularPlaneRegion extends Region {
 		);
 	}
 }
-class RectangularPlaneRegion extends Region {
+class RectangularPlaneRegion extends Region2D {
 	constructor(p1, p2, p3, p4) {
 		super();
 		this.p1 = p1;
@@ -167,12 +247,15 @@ class RectangularPlaneRegion extends Region {
 	isBetween(p, tol) {
 		return this.plane1.isBetween(p, tol) || this.plane2.isBetween(p, tol);
 	}
+	isInPlane(p, tol) {
+		return this.plane1.isInPlane(p, tol) || this.plane2.isInPlane(p, tol);
+	}
 	giveGeometry(norm) {
 		return extrudeRectangularPlane(
 			multiplyScalar(this.p1, norm),
 			multiplyScalar(this.p2, norm),
-			multiplyScalar(this.p3, norm),
 			multiplyScalar(this.p4, norm),
+			multiplyScalar(this.p3, norm),
 			0.005
 		);
 	}

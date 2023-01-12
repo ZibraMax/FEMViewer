@@ -259,6 +259,14 @@ function cross(p1, p2) {
 		p1[0] * p2[1] - p1[1] * p2[0],
 	];
 }
+function normVector(v) {
+	let r = [];
+	let mag = dot(v, v) ** 0.5;
+	for (let i = 0; i < v.length; i++) {
+		r.push(v[i] / mag);
+	}
+	return r;
+}
 
 export {
 	squared_distance,
@@ -280,4 +288,5 @@ export {
 	point_to_ray_distance,
 	subst,
 	cross,
+	normVector,
 };
