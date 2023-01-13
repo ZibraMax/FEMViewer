@@ -564,9 +564,12 @@ class FEMViewer {
 		}
 		return [false, potential];
 	}
-	async createOctree() {
+	createOctree() {
 		this.notiBar.setMessage("Creating Oct Tree... ⌛");
-		let nodes = transpose(this._nodes);
+		let nnodes = this._nodes.map((x) => {
+			return x["_xcenter"];
+		});
+		let nodes = transpose(nnodes);
 		let centerx = (max(nodes[0]) + min(nodes[0])) / 2;
 		let sizex = (max(nodes[0]) - min(nodes[0])) / 2;
 		let centery = (max(nodes[1]) + min(nodes[1])) / 2;
@@ -574,20 +577,16 @@ class FEMViewer {
 		let centerz = (max(nodes[2]) + min(nodes[2])) / 2;
 		let sizez = (max(nodes[2]) - min(nodes[2])) / 2;
 
-		let FF = 1.1;
+		let FF = 1.01;
 		let dimension = [sizex * FF, sizey * FF, sizez * FF];
 		let bounding = new Quadrant3D([centerx, centery, centerz], dimension);
-		this.OctTree = new Geometree(bounding);
-		let times = 0;
+		this.OctTree = new Geometree(bounding, 10);
 		for (let i = 0; i < this._nodes.length; i++) {
-			let p = { _xcenter: this._nodes[i].slice(), id: i };
+			let p = {
+				_xcenter: this._nodes[i]["_xcenter"].slice(),
+				id: this._nodes[i]["id"],
+			};
 			this.OctTree.add_point(p);
-			let percentage = (i / this._nodes.length) * 100;
-			if (percentage > times) {
-				times += 10;
-				this.notiBar.setProgressBar("Creating Oct Tree", percentage);
-				await allowUpdate();
-			}
 			this.notiBar.sendMessage("Octree created!");
 		}
 		const geo_list = this.OctTree.giveContours(this.norm);
@@ -884,7 +883,7 @@ class FEMViewer {
 		}
 		if (region) {
 			this.deselectAllNodes();
-			region.setNodesOfRegion(this.nodes);
+			region.setNodesOfRegionOctree(this.OctTree);
 			for (const node of region.nodes) {
 				this.selectNode(node["index"]);
 			}
@@ -1432,6 +1431,7 @@ class FEMViewer {
 			.onChange(this.changeExample.bind(this));
 	}
 	changeExample() {
+		this.gui.close();
 		this.json_path = this.filename;
 		this.reload();
 	}
@@ -1714,8 +1714,8 @@ class FEMViewer {
 				this.nodes[i].push(0.0); //Coordinate completition
 			}
 		}
-		let regiones = jsondata["regions"];
-		for (const re of regiones) {
+		this.regiones = jsondata["regions"];
+		for (const re of this.regiones) {
 			for (const co of re) {
 				for (let j = co.length; j < 3; j++) {
 					co.push(0.0); //Coordinate completition for regions
@@ -1841,26 +1841,38 @@ class FEMViewer {
 
 		this.size = max(this.nodes.flat()) - min(this.nodes.flat());
 		this.dimens = [sizex / 2, sizey / 2, sizez / 2];
-		this._nodes = [...this.nodes];
+		this._nodes = [];
+		for (let kk = 0; kk < this.nodes.length; kk++) {
+			this._nodes.push({ _xcenter: this.nodes[kk], id: kk });
+		}
 		let h = this.size / 20;
+		let kk = 0;
 		for (const n of this.nodes) {
 			if (this.ndim == 1 || this.ndim == 2) {
 				let node = [n[0], n[1], n[2] + h];
-				this._nodes.push(node);
+				this._nodes.push({ _xcenter: node, id: kk });
 				if (this.ndim == 1) {
 					node = [n[0], n[1] + h, n[2] + h];
-					this._nodes.push(node);
+					this._nodes.push({ _xcenter: node, id: kk });
 					node = [n[0], n[1] + h, n[2]];
-					this._nodes.push(node);
+					this._nodes.push({ _xcenter: node, id: kk });
 				}
 			}
+			kk++;
 		}
+		this.createRegions();
+	}
+	createRegions() {
+		console.log("creating octree");
+		this.createOctree();
+		console.log("Octree created");
 		let id_region = 0;
-		for (const re of regiones) {
+		console.log(this.regiones.length);
+		for (const re of this.regiones) {
 			for (const co of re) {
-				co[0] -= sizex / 2;
-				co[1] -= sizey / 2;
-				co[2] -= sizez / 2;
+				co[0] -= this.dimens[0];
+				co[1] -= this.dimens[1];
+				co[2] -= this.dimens[2];
 			}
 			this._createRegionCoords(re, id_region);
 			id_region++;

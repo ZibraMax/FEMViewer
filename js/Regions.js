@@ -17,6 +17,8 @@ import {
 	normVector,
 	multiply,
 	transpose,
+	max,
+	min,
 } from "./math.js";
 import { Triangle } from "./TriangularBasedGeometries.js";
 class Region {
@@ -31,6 +33,33 @@ class Region {
 			const p = nodes[i];
 			if (this.isBetween(p, tol)) {
 				this.nodes.push({ _xcenter: p, index: i });
+			}
+		}
+	}
+	setNodesOfRegionOctree(octree, tol = 1 * 10 ** -6) {
+		let coordinates = transpose(this.coordinates);
+		let sizex = max(coordinates[0]) - min(coordinates[0]);
+		let sizey = max(coordinates[1]) - min(coordinates[1]);
+		let sizez = max(coordinates[2]) - min(coordinates[2]);
+
+		sizex = Math.max(sizex, tol);
+		sizey = Math.max(sizey, tol);
+		sizez = Math.max(sizez, tol);
+
+		let centerx = (max(coordinates[0]) + min(coordinates[0])) / 2;
+		let centery = (max(coordinates[1]) + min(coordinates[1])) / 2;
+		let centerz = (max(coordinates[2]) + min(coordinates[2])) / 2;
+
+		let bounding = new Quadrant3D(
+			[centerx, centery, centerz],
+			[sizex / 2, sizey / 2, sizez / 2]
+		);
+		let nodes = octree.query_range(bounding);
+		this.nodes = [];
+		for (let i = 0; i < nodes.length; i++) {
+			const p = nodes[i]["_xcenter"];
+			if (this.isBetween(p, tol)) {
+				this.nodes.push({ _xcenter: p, index: nodes[i]["id"] });
 			}
 		}
 	}
