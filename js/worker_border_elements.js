@@ -1,4 +1,4 @@
-import { Geometree, Quadrant3D } from "./build/Octree.js";
+import { Geometree, Quadrant3D } from "./Octree.js";
 
 function detectBorderElements(elements, Octree, min_search_radius) {
 	const e = Octree.query_first_point_set()[0];

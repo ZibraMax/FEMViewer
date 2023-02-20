@@ -615,12 +615,12 @@ class FEMViewer {
 		this.octreeMesh = new THREE.LineSegments(geo, this.line_material);
 	}
 	async detectBorderElements2() {
-		await this.createOctree();
+		this.createOctreeBorderDetect();
 		this.calculate_border_elements_worker();
 	}
 
 	async detectBorderElements() {
-		await this.createOctree();
+		this.createOctreeBorderDetect();
 		this.before_load();
 		this.visited = new Array(this.elements.length).fill(false);
 		console.log("Encontrando elementos de borde");
