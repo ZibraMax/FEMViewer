@@ -10,6 +10,7 @@ let path_str = "2D_I_SHAPE";
 let queryString = window.location.search;
 let vis_param = 0;
 let theme = "Default";
+let theme_param = "Default";
 if (queryString != "") {
 	queryString = queryString.split("?")[1];
 	let parametros = new URLSearchParams(queryString);
@@ -20,7 +21,10 @@ if (queryString != "") {
 	let axis_param = parametros.get("axis");
 	let zoom_param = parametros.get("zoom");
 	let lines_param = parametros.get("lines");
-	theme = parametros.get("theme");
+	theme_param = parametros.get("theme");
+	if (theme_param) {
+		theme = theme_param;
+	}
 	vis_param = parametros.get("menu");
 	if (funcion_param) {
 		path_str = funcion_param;
@@ -50,6 +54,11 @@ if (queryString != "") {
 let path = `./resources/${path_str}.json`;
 if (path_str.startsWith("https://")) {
 	path = path_str;
+} else if (path_str.startsWith("ex:")) {
+	path =
+		"https://raw.githubusercontent.com/ZibraMax/FEM/master/Examples/Mesh_tests/" +
+		path_str.split(":")[1];
+	console.log(path);
 }
 
 const container = document.getElementById("models-container");
@@ -72,6 +81,7 @@ console.log(O);
 O.after_load();
 async function getFiles(paths) {
 	const file_paths = [];
+	const d = {};
 	for (const path of paths) {
 		const response = await fetch(path);
 		const jsondata = await response.json();
@@ -91,10 +101,17 @@ async function getFiles(paths) {
 						"/" +
 						file["path"]
 				);
+				d[file["path"]] =
+					"https://raw.githubusercontent.com/" +
+					repo +
+					"/" +
+					rama +
+					"/" +
+					file["path"];
 			}
 		}
 	}
-	O.addExamples(file_paths);
+	O.addExamples(d);
 }
 getFiles([
 	"https://api.github.com/repos/ZibraMax/FEM/git/trees/master?recursive=1",
