@@ -1896,7 +1896,7 @@ class FEMViewer {
 		this.max_abs_disp =
 			Math.max(Math.abs(max_disp), Math.abs(min_disp)) * this.norm;
 		if (this.config_dict["displacements"]) {
-			this.magnifSlider.min(-0.4 / this.max_abs_disp);
+			this.magnifSlider.min(0.0);
 			this.magnifSlider.max(0.4 / this.max_abs_disp);
 		}
 	}
