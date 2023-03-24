@@ -38,9 +38,14 @@ class ElementView {
 			this.parent.magnif * this.parent.mult,
 			this.parent.norm
 		);
+		let Cfuntion = undefined;
+		if (this.parent.config_dict["C"]) {
+			Cfuntion = this.parent.config_dict["C"];
+		}
 		this.element.setMaxDispNode(
 			this.parent.colorOptions,
-			this.parent.config_dict["calculateStrain"]
+			this.parent.config_dict["calculateStrain"],
+			Cfuntion
 		);
 
 		this.parent.updateSpecificBufferGeometry(this.element.index);

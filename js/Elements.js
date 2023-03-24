@@ -11,6 +11,7 @@ import {
 	abs,
 	add,
 	matInverse,
+	createVector,
 } from "./math.js";
 function newPrism(n = 1) {
 	const tr = new Prism();
@@ -278,7 +279,10 @@ class Element {
 		}
 		return zi;
 	}
-	giveSolutionPoint(z, colorMode, strain) {
+	set_properties(p) {
+		this.properties = p;
+	}
+	giveSolutionPoint(z, colorMode, strain, Cfuntion) {
 		let solution = Array(this.Ue[0].length).fill(0.0);
 		let [x, P] = this.T(z);
 		let [J, dpz] = this.J(z);
@@ -302,12 +306,10 @@ class Element {
 		} else if (colorMode == "scaled_jac") {
 			result = this.sJ;
 		} else if (colorMode[0] == "PROP") {
-			if (colorMode[1] instanceof Array) {
-				result = colorMode[1][this.index];
-			} else {
-				result = colorMode[1];
-			}
+			let prop_name = colorMode[1];
+			result = this.properties[prop_name];
 		} else if (strain && colorMode != "nocolor") {
+			let C = Cfuntion(this.properties);
 			let epsilon = [0, 0, 0, 0, 0, 0];
 			if (du.length == 3) {
 				const exx = du[0][0];
@@ -324,17 +326,39 @@ class Element {
 				const exy = du[0][1] + du[1][0];
 				epsilon = [exx, eyy, exy];
 			}
+			let eps = createVector(epsilon);
+			let sigmas = multiply(C, eps);
+			sigmas = transpose(sigmas)[0];
+			epsilon.push(...sigmas);
+			if (du.length == 2) {
+				let sx = sigmas[0];
+				let sy = sigmas[1];
+				let txy = sigmas[2];
+				let s1 =
+					(sx + sy) / 2 + (((sx - sy) / 2) ** 2 + txy ** 2) ** 0.5;
+				let s2 =
+					(sx + sy) / 2 - (((sx - sy) / 2) ** 2 + txy ** 2) ** 0.5;
+				let s3 = (s1 - s2) / 2;
+				epsilon.push(s1);
+				epsilon.push(s2);
+				epsilon.push(s3);
+			}
 			result = epsilon[colorMode];
 		} else if (colorMode != "nocolor") {
 			result = du[colorMode[0]][colorMode[1]];
 		}
 		return result;
 	}
-	setMaxDispNode(colorMode, strain) {
+	setMaxDispNode(colorMode, strain, Cfuntion) {
 		this.colors = Array(this.domain.length).fill(0.0);
 		for (let i = 0; i < this._domain.length; i++) {
 			const z = this._domain[i];
-			this.colors[i] = this.giveSolutionPoint(z, colorMode, strain);
+			this.colors[i] = this.giveSolutionPoint(
+				z,
+				colorMode,
+				strain,
+				Cfuntion
+			);
 		}
 	}
 }

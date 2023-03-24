@@ -1145,10 +1145,15 @@ class FEMViewer {
 			this.colors = false;
 			msg = "Showing geometry.";
 		}
+		let Cfuntion = undefined;
+		if (this.config_dict["C"]) {
+			Cfuntion = this.config_dict["C"];
+		}
 		for (const e of this.elements) {
 			e.setMaxDispNode(
 				this.colorOptions,
-				this.config_dict["calculateStrain"]
+				this.config_dict["calculateStrain"],
+				Cfuntion
 			);
 		}
 
@@ -1489,7 +1494,7 @@ class FEMViewer {
 				"|U|": "dispmag",
 				"Scaled Jacobian": "scaled_jac",
 				...this.config_dict["dict"],
-				...this.prop_dict,
+				...this.prop_dict_names,
 			})
 			.name("Show color")
 			.listen()
@@ -1809,8 +1814,10 @@ class FEMViewer {
 			}
 		}
 		this.prop_dict = {};
+		this.prop_dict_names = {};
 		for (const p of this.config_dict["props"]) {
-			this.prop_dict[p] = ["PROP", jsondata["properties"][p]];
+			this.prop_dict[p] = ["PROP", jsondata["properties"][p], p];
+			this.prop_dict_names[p] = ["PROP", p];
 		}
 
 		this.loaded = true;
@@ -1983,7 +1990,17 @@ class FEMViewer {
 				colors.push(1, 1, 1);
 			}
 			this.elements[i].index = i;
-
+			const p = {};
+			for (const [key, value] of Object.entries(this.prop_dict)) {
+				let result = undefined;
+				if (value[1] instanceof Array) {
+					result = value[1][i];
+				} else {
+					result = value[1];
+				}
+				p[key] = result;
+			}
+			this.elements[i].set_properties(p);
 			this.bufferGeometries.push(this.elements[i].geometry);
 			const messh = new THREE.Mesh(
 				this.elements[i].geometry,

@@ -172,7 +172,9 @@ function min(arr) {
 function transpose(arr) {
 	return arr[0].map((_, colIndex) => arr.map((row) => row[colIndex]));
 }
-
+function createVector(arr) {
+	return transpose([[...arr]]);
+}
 function multiply(a, b) {
 	var aNumRows = a.length,
 		aNumCols = a[0].length,
@@ -289,4 +291,5 @@ export {
 	subst,
 	cross,
 	normVector,
+	createVector,
 };
