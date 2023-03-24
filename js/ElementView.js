@@ -320,10 +320,15 @@ class ElementView {
 			];
 
 			const z = this.element.inverseMapping(punto);
+			let Cfuntion = undefined;
+			if (this.parent.config_dict["C"]) {
+				Cfuntion = this.parent.config_dict["C"];
+			}
 			let value = this.element.giveSolutionPoint(
 				z,
 				this.parent.colorOptions,
-				this.parent.config_dict["calculateStrain"]
+				this.parent.config_dict["calculateStrain"],
+				Cfuntion
 			);
 			if (Math.abs(value).toFixed(4) == "0.0000") {
 				value = value.toExponential(4);
