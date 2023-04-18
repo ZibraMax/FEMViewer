@@ -911,13 +911,13 @@ class TetrahedralO2 extends Tetrahedral {
 		this.type = "TE2V";
 	}
 	psi(_z) {
-		x = _z[0];
-		y = _z[1];
-		z = _z[2];
-		L1 = 1 - x - y - z;
-		L2 = x;
-		L3 = y;
-		L4 = z;
+		let x = _z[0];
+		let y = _z[1];
+		let z = _z[2];
+		let L1 = 1 - x - y - z;
+		let L2 = x;
+		let L3 = y;
+		let L4 = z;
 		return [
 			L1 * (2 * L1 - 1),
 			L2 * (2 * L2 - 1),
@@ -932,9 +932,9 @@ class TetrahedralO2 extends Tetrahedral {
 		];
 	}
 	dpsi(_z) {
-		x = _z[0];
-		y = _z[1];
-		z = _z[2];
+		let x = _z[0];
+		let y = _z[1];
+		let z = _z[2];
 
 		return [
 			[
@@ -988,9 +988,9 @@ class BrickO2 extends Brick {
 		];
 	}
 	dpsi(_z) {
-		x = _z[0];
-		y = _z[1];
-		z = _z[2];
+		let x = _z[0];
+		let y = _z[1];
+		let z = _z[2];
 		return [
 			[
 				(1 / 8) *
