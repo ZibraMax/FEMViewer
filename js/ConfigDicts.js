@@ -3,6 +3,18 @@ const GENERAL = {
 	displacements: false,
 	props: [],
 };
+
+function fun_es(props) {
+	return [
+		[1, 0, 0, 0, 0, 0],
+		[0, 1, 0, 0, 0, 0],
+		[0, 0, 1, 0, 0, 0],
+		[0, 0, 0, 1, 0, 0],
+		[0, 0, 0, 0, 1, 0],
+		[0, 0, 0, 0, 0, 1],
+	];
+}
+
 const Elasticity = {
 	calculateStrain: true,
 	displacements: true,
@@ -14,6 +26,7 @@ const Elasticity = {
 		εxz: 4,
 		εyz: 5,
 	},
+	C: fun_es,
 	props: [],
 };
 
