@@ -112,6 +112,14 @@ const Heat1D = {
 	},
 	props: ["A", "P", "ku", "beta", "Ta", "q"],
 };
+const Heat1DTransient = {
+	calculateStrain: false,
+	displacements: false,
+	dict: {
+		"dT/dx": [0, 0],
+	},
+	props: ["A", "P", "ku", "beta", "Ta", "q"],
+};
 
 const Heat2D = {
 	calculateStrain: false,
@@ -129,6 +137,7 @@ const CONFIG_DICT = {
 	EulerBernoulliBeam: GENERAL,
 	EulerBernoulliBeamNonLineal: GENERAL,
 	Heat1D: Heat1D,
+	Heat1DTransient: Heat1DTransient,
 	Heat2D: Heat2D,
 	Torsion2D: Torsion2D,
 	NonLinealSimpleEquation: GENERAL,
