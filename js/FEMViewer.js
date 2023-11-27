@@ -176,6 +176,9 @@ class FEMViewer {
 		if (!magnif) {
 			magnif = 0;
 		}
+		if (!rot) {
+			rot = false;
+		}
 		// FEM
 
 		this.selectedNodes = [];
