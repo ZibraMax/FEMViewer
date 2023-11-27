@@ -5,7 +5,7 @@ const container = document.getElementById("models-container");
 const O = new FEMViewer(container);
 O.menuCerrado = false;
 O.updateMenuCerrado();
-await O.loadJSON("../resources/2D_I_SHAPE.json");
+await O.loadJSON("./resources/2D_I_SHAPE.json");
 await O.init();
 console.log(O);
 O.after_load();
