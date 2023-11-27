@@ -177,6 +177,9 @@ class FEMViewer {
 		if (!magnif) {
 			magnif = 0;
 		}
+		if (!rot) {
+			rot = false;
+		}
 		let coords = [
 			[0.0, 0.0, 0.0],
 			[1.0, 0.0, 0.0],
