@@ -34,7 +34,6 @@ import {
 } from "./math.js";
 import { NotificationBar } from "./NotificationBar.js";
 import { Modal } from "./ModalManager.js";
-import { Path } from "./Path.js";
 function allowUpdate() {
 	return new Promise((f) => {
 		setTimeout(f, 0);
@@ -113,7 +112,7 @@ const themes = {
 		emmisive: true,
 	},
 	Dark: {
-		"--gui-background-color": "#1f1f1f",
+		"--gui-background-color": "#000000",
 		"--gui-text-color": "#ebebeb",
 		"--gui-title-background-color": "#111111",
 		"--gui-title-text-color": "#ebebeb",
@@ -186,9 +185,6 @@ class FEMViewer {
 			[1.0, 1.0, 0.0],
 			[2.0, 1.0, 0.0],
 		];
-		this.dev_path = new Path(coords);
-		this.dev_path.generate_points(3);
-		console.log(this.dev_path._coords);
 		// FEM
 
 		this.selectedNodes = [];
