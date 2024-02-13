@@ -1389,6 +1389,7 @@ class FEMViewer {
 				this.updateGeometry();
 			}
 		}
+		this.renderer.render(this.scene, this.camera);
 		if (this.resizeRendererToDisplaySize()) {
 			const canvas = this.renderer.domElement;
 			const aspect = canvas.clientWidth / canvas.clientHeight;
@@ -1396,7 +1397,6 @@ class FEMViewer {
 			this.camera.updateProjectionMatrix();
 			this.zoomExtents();
 		}
-		this.renderer.render(this.scene, this.camera);
 		if (this.colors && this.menuCerrado) {
 			this.renderer.render(this.uiScene, this.orthoCamera);
 		}
