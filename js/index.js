@@ -65,6 +65,10 @@ const container = document.getElementById("models-container");
 
 const O = new FEMViewer(container, magnif, rot, axis == 1, zoom);
 O.theme = themes[theme] || {};
+if (vis_param == 1) {
+	O.menuCerrado = false;
+	O.updateMenuCerrado();
+}
 O.updateStylesheet();
 O.updateColors();
 O.updateMaterial();
@@ -72,10 +76,6 @@ O.draw_lines = lines;
 await O.loadJSON(path);
 O.step = mode;
 await O.init();
-if (vis_param == 1) {
-	O.menuCerrado = false;
-	O.updateMenuCerrado();
-}
 
 console.log(O);
 O.after_load();
