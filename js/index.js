@@ -65,6 +65,8 @@ const container = document.getElementById("models-container");
 
 const O = new FEMViewer(container, magnif, rot, axis == 1, zoom);
 O.theme = themes[theme] || {};
+O.after_load();
+
 if (vis_param == 1) {
 	O.menuCerrado = false;
 	O.updateMenuCerrado();
