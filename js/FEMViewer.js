@@ -1968,7 +1968,7 @@ class FEMViewer {
 
 	async createElements() {
 		this.bufferGeometries = [];
-		this.elements = new Array(this.dictionary.length).fill(0.0);
+		this.elements = [];
 		let times = 0;
 		for (let i = 0; i < this.dictionary.length; i++) {
 			const gdls = this.dictionary[i];
@@ -1984,59 +1984,55 @@ class FEMViewer {
 			for (const node of gdls) {
 				coords.push(this.nodes[node]);
 			}
+			if (this.types[i] in types) {
+				const e = new types[this.types[i]](
+					coords,
+					egdls,
+					(this.size / 10) * this.norm
+				);
+				this.elements.push(e);
 
-			this.elements[i] = new types[this.types[i]](
-				coords,
-				egdls,
-				this.size * this.norm
-			);
+				let d = 0;
 
-			let d = 0;
-			for (const c of coords) {
-				let sx = c[0] - this.elements[i]._xcenter[0];
-				let sy = c[1] - this.elements[i]._xcenter[1];
-				let sz = c[2] - this.elements[i]._xcenter[2];
-				d = Math.max(d, sx ** 2 + sy ** 2 + sz ** 2);
-			}
-
-			this.min_search_radius = Math.max(
-				this.min_search_radius,
-				2 * d ** 0.5
-			);
-			const colors = [];
-			for (
-				let j = 0;
-				j < this.elements[i].geometry.attributes.position.count;
-				++j
-			) {
-				colors.push(1, 1, 1);
-			}
-			this.elements[i].index = i;
-			const p = {};
-			for (const [key, value] of Object.entries(this.prop_dict)) {
-				let result = undefined;
-				if (value[1] instanceof Array) {
-					result = value[1][i];
-				} else {
-					result = value[1];
+				for (const c of coords) {
+					let sx = c[0] - e._xcenter[0];
+					let sy = c[1] - e._xcenter[1];
+					let sz = c[2] - e._xcenter[2];
+					d = Math.max(d, sx ** 2 + sy ** 2 + sz ** 2);
 				}
-				p[key] = result;
-			}
-			this.elements[i].set_properties(p);
-			this.bufferGeometries.push(this.elements[i].geometry);
-			const messh = new THREE.Mesh(
-				this.elements[i].geometry,
-				this.material
-			);
-			messh.visible = false;
-			messh.userData = { elementId: i };
-			this.invisibleModel.add(messh);
 
-			let percentage = (i / this.dictionary.length) * 100;
-			if (percentage > times) {
-				times += 1;
-				this.notiBar.setProgressBar("Loading model", percentage);
-				await allowUpdate();
+				this.min_search_radius = Math.max(
+					this.min_search_radius,
+					2 * d ** 0.5
+				);
+				const colors = [];
+				for (let j = 0; j < e.geometry.attributes.position.count; ++j) {
+					colors.push(1, 1, 1);
+				}
+				e.index = i;
+				const p = {};
+				for (const [key, value] of Object.entries(this.prop_dict)) {
+					let result = undefined;
+					if (value[1] instanceof Array) {
+						result = value[1][i];
+					} else {
+						result = value[1];
+					}
+					p[key] = result;
+				}
+				e.set_properties(p);
+				this.bufferGeometries.push(e.geometry);
+				const messh = new THREE.Mesh(e.geometry, this.material);
+				messh.visible = false;
+				messh.userData = { elementId: i };
+				this.invisibleModel.add(messh);
+
+				let percentage = (i / this.dictionary.length) * 100;
+				if (percentage > times) {
+					times += 1;
+					this.notiBar.setProgressBar("Loading model", percentage);
+					await allowUpdate();
+				}
 			}
 		}
 	}

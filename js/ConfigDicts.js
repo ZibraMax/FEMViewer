@@ -130,6 +130,16 @@ const Heat2D = {
 	},
 	props: ["kx", "ky"],
 };
+const TrussNonLinear = {
+	calculateStrain: true,
+	displacements: true,
+	dict: {
+		"dU/dx": [0, 0],
+		"dU/dy": [0, 1],
+		"dU/dz": [0, 2],
+	},
+	props: ["E", "A"],
+};
 
 const CONFIG_DICT = {
 	GENERAL: GENERAL,
@@ -150,5 +160,9 @@ const CONFIG_DICT = {
 	PlaneStressNonLocalSparse: PlaneStressSparse,
 	PlaneStressSparse: PlaneStressSparse,
 	NonLocalElasticityFromTensor: Elasticity,
+	TrussNonLinear: TrussNonLinear,
+	TrussLinear: TrussNonLinear,
+	BarAndHingeLinear: TrussNonLinear,
+	BarAndHingeNonLinear: TrussNonLinear,
 };
 export { CONFIG_DICT };

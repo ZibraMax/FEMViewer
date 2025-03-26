@@ -647,7 +647,7 @@ class Lineal extends Element3D {
 			const x = coords[i][0];
 			c.push([x]);
 		}
-		this.coords_o = c;
+		this.coords_o = coords;
 		this.initGeometry();
 		this.Z = [[-0.77459667], [0], [0.77459667]];
 		this.W = [0.55555556, 0.88888889, 0.55555556];
