@@ -160,6 +160,7 @@ const CONFIG_DICT = {
 	PlaneStressNonLocalSparse: PlaneStressSparse,
 	PlaneStressSparse: PlaneStressSparse,
 	NonLocalElasticityFromTensor: Elasticity,
+	NonLocalElasticity: Elasticity,
 	TrussNonLinear: TrussNonLinear,
 	TrussLinear: TrussNonLinear,
 	BarAndHingeLinear: TrussNonLinear,
