@@ -140,6 +140,22 @@ const TrussNonLinear = {
 	},
 	props: ["E", "A"],
 };
+const BarAndHinge = {
+	calculateStrain: true,
+	displacements: true,
+	dict: {
+		"dU/dx": [0, 0],
+		"dU/dy": [0, 1],
+		"dU/dz": [0, 2],
+	},
+	props: [],
+};
+const ShellAndHinge = {
+	calculateStrain: false,
+	displacements: true,
+	dict: {},
+	props: [],
+};
 
 const CONFIG_DICT = {
 	GENERAL: GENERAL,
@@ -163,7 +179,8 @@ const CONFIG_DICT = {
 	NonLocalElasticity: Elasticity,
 	TrussNonLinear: TrussNonLinear,
 	TrussLinear: TrussNonLinear,
-	BarAndHingeLinear: TrussNonLinear,
-	BarAndHingeNonLinear: TrussNonLinear,
+	BarAndHingeLinear: BarAndHinge,
+	BarAndHingeNonLinear: BarAndHinge,
+	ShellAndHinge: ShellAndHinge,
 };
 export { CONFIG_DICT };
