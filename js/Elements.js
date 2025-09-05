@@ -726,7 +726,7 @@ class Triangular extends Element3D {
 			const y = coords[i][1];
 			c.push([x, y]);
 		}
-		this.coords_o = c;
+		this.coords_o = coords;
 		this.initGeometry();
 		const A0 = 1 / 3;
 		const A1 = 0.05971587178977;
@@ -808,7 +808,7 @@ class Quadrilateral extends Element3D {
 			const y = coords[i][1];
 			c.push([x, y]);
 		}
-		this.coords_o = c;
+		this.coords_o = coords;
 		this.initGeometry();
 		this.Z = [
 			[-0.77459667, -0.77459667],

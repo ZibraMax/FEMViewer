@@ -276,6 +276,7 @@ class FEMViewer {
 		this.bufferGeometries = [];
 		this.bufferLines = [];
 		this.model = new THREE.Object3D();
+		this.time = 0.0;
 
 		this.regionModel = new THREE.Object3D();
 		this.regionModelContours = new THREE.Object3D();
@@ -304,6 +305,7 @@ class FEMViewer {
 		this.loaded = false;
 		this.colorOptions = "nocolor";
 		this.clickMode = "Inspect element";
+		this.animationType = "Single step";
 		this.createModals();
 		this.histogram = document.getElementById("histogram");
 
@@ -711,6 +713,7 @@ class FEMViewer {
 	}
 
 	reset() {
+		this.time = 0.0;
 		this.solution_as_displacement = false;
 		this.variable_as_displacement = 2;
 		this.toogleSolutionAsDisp(); // THIS TOOGLE DISPLACEMENTS!!!
@@ -1094,6 +1097,21 @@ class FEMViewer {
 		if (this.config_dict["displacements"]) {
 			this.disp_gui_disp_folder = this.gui.addFolder("Displacements");
 			this.disp_gui_disp_folder
+				.add(this, "animationType", [
+					"Single step",
+					"Solutions timeline",
+				])
+				.name("Animation type")
+				.listen()
+				.onChange(() => {
+					this.magnif = 1.0;
+					this.time = 0.0;
+					this.updateMeshCoords();
+					this.updateGeometry();
+					this.notiBar.resetMessage();
+				});
+
+			this.disp_gui_disp_folder
 				.add(this, "animate")
 				.name("Animation")
 				.listen()
@@ -1374,21 +1392,38 @@ class FEMViewer {
 	}
 
 	async render(time) {
+		let nsolutions = this.solutions.length;
 		if (typeof time == "number") {
 			time = time || 0;
 		} else {
 			time = 0.0;
 		}
-		this.mult += time * this.side;
-		if (this.mult > 1) {
-			this.side = -1.0;
-			this.mult = 1.0;
-		} else if (this.mult < -1) {
-			this.side = 1.0;
-			this.mult = -1.0;
+		if (this.animationType == "Single step") {
+			this.mult += time * this.side;
+			if (this.mult > 1) {
+				this.side = -1.0;
+				this.mult = 1.0;
+			} else if (this.mult < -1) {
+				this.side = 1.0;
+				this.mult = -1.0;
+			}
+			if (!this.animate) {
+				this.mult = 1.0;
+			}
 		}
-		if (!this.animate) {
+
+		if (
+			this.animate &&
+			this.animationType == "Solutions timeline" &&
+			nsolutions > 1
+		) {
 			this.mult = 1.0;
+			this.time += time;
+			let step = Math.floor((this.time * nsolutions) / 10) % nsolutions;
+
+			this.step = step;
+			this.updateSolutionInfo();
+			this.updateSolution();
 		}
 
 		// console.log(this.mult);
@@ -1543,7 +1578,7 @@ class FEMViewer {
 			.listen()
 			.onChange(this.updateLut.bind(this));
 		this.guifolder
-			.add(this, "step", this.solutions_info_str)
+			.add(this, "step", 0, Math.max(0, this.solutions.length - 1), 1)
 			.onChange(this.updateSolution.bind(this))
 			.listen()
 			.name("Solution");
