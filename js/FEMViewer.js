@@ -1870,12 +1870,44 @@ class FEMViewer {
 				};
 			}
 		}
+		// Use all data in jsondata["properties"] as available properties
+		// to be visualized in the color map
+
+		let names = Object.keys(jsondata["properties"]);
+		let values = Object.values(jsondata["properties"]);
+
+		let props_valid = [];
+		let names_valid = [];
+
+		// It's only valid if is a number or an array of numbers
+		for (let i = 0; i < names.length; i++) {
+			let v = values[i];
+			if (typeof v === "number") {
+				props_valid.push(names[i]);
+				names_valid.push(names[i]);
+			} else if (Array.isArray(v)) {
+				let all_numbers = true;
+				for (const vi of v) {
+					if (typeof vi !== "number") {
+						all_numbers = false;
+					}
+				}
+				if (all_numbers) {
+					props_valid.push(names[i]);
+					names_valid.push(names[i]);
+				}
+			}
+		}
+
+		this.config_dict["props"].push(...names_valid);
+
 		this.prop_dict = {};
 		this.prop_dict_names = {};
 		for (const p of this.config_dict["props"]) {
 			this.prop_dict[p] = ["PROP", jsondata["properties"][p], p];
 			this.prop_dict_names[p] = ["PROP", p];
 		}
+		console.log(this.config_dict);
 
 		this.loaded = true;
 		this.info = Object.keys(this.solutions_info[this.step])[0];
@@ -2056,6 +2088,7 @@ class FEMViewer {
 					p[key] = result;
 				}
 				e.set_properties(p);
+
 				this.bufferGeometries.push(e.geometry);
 				const messh = new THREE.Mesh(e.geometry, this.material);
 				messh.visible = false;
