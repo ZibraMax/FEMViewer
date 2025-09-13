@@ -11,6 +11,7 @@ let queryString = window.location.search;
 let vis_param = 0;
 let theme = "Default";
 let theme_param = "Default";
+let animation = "off";
 if (queryString != "") {
 	queryString = queryString.split("?")[1];
 	let parametros = new URLSearchParams(queryString);
@@ -21,6 +22,7 @@ if (queryString != "") {
 	let axis_param = parametros.get("axis");
 	let zoom_param = parametros.get("zoom");
 	let lines_param = parametros.get("lines");
+	let anim_param = parametros.get("animation");
 	theme_param = parametros.get("theme");
 	if (theme_param) {
 		theme = theme_param;
@@ -48,6 +50,9 @@ if (queryString != "") {
 	}
 	if (lines_param) {
 		lines = false;
+	}
+	if (anim_param) {
+		animation = anim_param;
 	}
 }
 
@@ -81,6 +86,13 @@ await O.init();
 
 console.log(O);
 O.after_load();
+
+if (animation == "off") {
+	O.animate = false;
+	console.log("Animation: " + animation);
+} else if (animation == "solutions") {
+	O.animationType = "Solutions timeline";
+}
 async function getFiles(paths) {
 	const file_paths = [];
 	const d = {};
