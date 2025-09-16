@@ -239,6 +239,7 @@ class FEMViewer {
 		};
 		this.after_load = () => {
 			this.loaderIcon.style.display = "none";
+			this.JSONModal.close();
 		};
 		this.rot = rot;
 		this.resolution = 1;
@@ -689,7 +690,6 @@ class FEMViewer {
 	}
 
 	async loadJSON(json_path, be) {
-		this.JSONModal.close();
 		this.notiBar.setMessage("Loading model..." + "⌛", true);
 		this.json_path = json_path;
 		this.filename = json_path;
