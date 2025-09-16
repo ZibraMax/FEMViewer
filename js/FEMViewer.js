@@ -689,6 +689,7 @@ class FEMViewer {
 	}
 
 	async loadJSON(json_path, be) {
+		this.JSONModal.close();
 		this.notiBar.setMessage("Loading model..." + "⌛", true);
 		this.json_path = json_path;
 		this.filename = json_path;
