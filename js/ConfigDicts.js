@@ -62,6 +62,7 @@ function fun_pstr(props) {
 const PlaneStressSparse = {
 	calculateStrain: true,
 	displacements: true,
+	thickness: "t",
 	C: fun_ps,
 	dict: {
 		εx: 0,
@@ -153,6 +154,8 @@ const BarAndHinge = {
 const ShellAndHinge = {
 	calculateStrain: false,
 	displacements: true,
+	thickness: "th",
+	defaultMagnifier: 1,
 	dict: {},
 	props: [],
 };

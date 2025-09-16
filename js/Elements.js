@@ -9,6 +9,7 @@ import {
 	min,
 	max,
 	abs,
+	cross,
 	add,
 	matInverse,
 	createVector,
@@ -156,7 +157,7 @@ class Element {
 			this._ULines.push(_U);
 		}
 	}
-	setGeometryCoords(mult, norm) {
+	setGeometryCoords(mult, norm, extrude_thickness) {
 		if (!mult) {
 			if (mult != 0) {
 				mult = 1.0;
@@ -171,20 +172,29 @@ class Element {
 		const parent_geometry = this.geometry;
 		const line_geometry = this.line_geometry;
 		let count = this._domain.length;
+		try {
+			this.calculateModifiers();
+		} catch (error) {}
 		for (let i = 0; i < count; i++) {
 			const X = this.X[i];
 			let U = this._U[i];
 			parent_geometry.attributes.position.setX(
 				i,
-				X[0] * norm + this.modifier[i][0] + U[0] * mult * norm
+				X[0] * norm +
+					this.modifier[i][0] * norm * extrude_thickness +
+					U[0] * mult * norm
 			);
 			parent_geometry.attributes.position.setY(
 				i,
-				X[1] * norm + this.modifier[i][1] + U[1] * mult * norm
+				X[1] * norm +
+					this.modifier[i][1] * norm * extrude_thickness +
+					U[1] * mult * norm
 			);
 			parent_geometry.attributes.position.setZ(
 				i,
-				X[2] * norm + this.modifier[i][2] + U[2] * mult * norm
+				X[2] * norm +
+					this.modifier[i][2] * norm * extrude_thickness +
+					U[2] * mult * norm
 			);
 		}
 		parent_geometry.attributes.position.needsUpdate = true;
@@ -196,15 +206,21 @@ class Element {
 				let U = this._ULines[i];
 				line_geometry.attributes.position.setX(
 					i,
-					X[0] * norm + this.line_modifier[i][0] + U[0] * mult * norm
+					X[0] * norm +
+						this.line_modifier[i][0] * norm * extrude_thickness +
+						U[0] * mult * norm
 				);
 				line_geometry.attributes.position.setY(
 					i,
-					X[1] * norm + this.line_modifier[i][1] + U[1] * mult * norm
+					X[1] * norm +
+						this.line_modifier[i][1] * norm * extrude_thickness +
+						U[1] * mult * norm
 				);
 				line_geometry.attributes.position.setZ(
 					i,
-					X[2] * norm + this.line_modifier[i][2] + U[2] * mult * norm
+					X[2] * norm +
+						this.line_modifier[i][2] * norm * extrude_thickness +
+						U[2] * mult * norm
 				);
 			}
 			line_geometry.attributes.position.needsUpdate = true;
@@ -755,26 +771,74 @@ class Triangular extends Element3D {
 			[0.0 * (1 + kernell), 1.0 * (1 + kernell)],
 		];
 	}
+	calculateNormalVector() {
+		this.normal = [0, 0, 0];
+		if (this.coords.length < 3) return;
+		let c1 = this.coords[0];
+		let c2 = this.coords[1];
+		let c3 = this.coords[2];
+
+		// Include nodal displacements if available
+		if (this.Ue.length >= 3) {
+			let ue = transpose(this.Ue);
+			c1 = add(c1, ue[0]);
+			c2 = add(c2, ue[1]);
+			c3 = add(c3, ue[2]);
+		}
+		let v1 = [c2[0] - c1[0], c2[1] - c1[1], c2[2] - c1[2]];
+		let v2 = [c3[0] - c1[0], c3[1] - c1[1], c3[2] - c1[2]];
+		this.normal = cross(v1, v2);
+		let norm = Math.sqrt(
+			this.normal[0] ** 2 + this.normal[1] ** 2 + this.normal[2] ** 2
+		);
+		if (norm > 0) {
+			this.normal = this.normal.map((v) => v / norm);
+		}
+	}
+	calculateModifiers() {
+		this.calculateNormalVector();
+		for (let i = 0; i < this.geometry.attributes.position.count; i++) {
+			let z = this.original_signs[i];
+			this.modifier[i] = multiplyScalar(this.normal, (z * this.tama) / 2);
+		}
+		for (let i = 0; i < this.line_geometry.attributes.position.count; i++) {
+			let z = this.original_signs_lines[i];
+			this.line_modifier[i] = multiplyScalar(
+				this.normal,
+				(z * this.tama) / 2
+			);
+		}
+	}
 	transformation(geo) {
 		this._domain = [];
 		this.modifier = [];
 		this.line_domain = [];
 		this.line_modifier = [];
+		this.calculateNormalVector();
+		this.original_signs = [];
+		this.original_signs_lines = [];
 		const Z = [];
 		for (let i = 0; i < geo.attributes.position.count; i++) {
 			const x = geo.attributes.position.getX(i);
 			const y = geo.attributes.position.getY(i);
-			const z = geo.attributes.position.getZ(i);
+			const z = (geo.attributes.position.getZ(i) - 0.5) * 2;
 			Z.push([x, y, z]);
 			this._domain.push([x, y]);
-			this.modifier.push([0.0, 0.0, (this.tama / 20) * z]);
+			this.modifier.push(
+				multiplyScalar(this.normal, (z * this.tama) / 2)
+			);
+			this.original_signs.push(Math.sign(z));
 		}
 		for (let i = 0; i < this.line_geometry.attributes.position.count; i++) {
 			const x = this.line_geometry.attributes.position.getX(i);
 			const y = this.line_geometry.attributes.position.getY(i);
-			const z = this.line_geometry.attributes.position.getZ(i);
+			const z =
+				(this.line_geometry.attributes.position.getZ(i) - 0.5) * 2;
 			this.line_domain.push([x, y]);
-			this.line_modifier.push([0.0, 0.0, (this.tama / 20) * z]);
+			this.line_modifier.push(
+				multiplyScalar(this.normal, (z * this.tama) / 2)
+			);
+			this.original_signs_lines.push(Math.sign(z));
 		}
 		return Z;
 	}
@@ -826,6 +890,7 @@ class Quadrilateral extends Element3D {
 			0.49382716, 0.30864198, 0.49382716, 0.30864198,
 		];
 	}
+
 	psi(z) {
 		return [
 			0.25 * (1.0 - z[0]) * (1.0 - z[1]),
@@ -842,11 +907,52 @@ class Quadrilateral extends Element3D {
 			[-0.25 * (1.0 + z[1]), 0.25 * (1.0 - z[0])],
 		];
 	}
+	calculateNormalVector() {
+		this.normal = [0, 0, 0];
+		if (this.coords.length < 3) return;
+		let c1 = this.coords[0];
+		let c2 = this.coords[1];
+		let c3 = this.coords[2];
+
+		// Include nodal displacements if available
+		if (this.Ue.length >= 3) {
+			let ue = transpose(this.Ue);
+			c1 = add(c1, ue[0]);
+			c2 = add(c2, ue[1]);
+			c3 = add(c3, ue[2]);
+		}
+		let v1 = [c2[0] - c1[0], c2[1] - c1[1], c2[2] - c1[2]];
+		let v2 = [c3[0] - c1[0], c3[1] - c1[1], c3[2] - c1[2]];
+		this.normal = cross(v1, v2);
+		let norm = Math.sqrt(
+			this.normal[0] ** 2 + this.normal[1] ** 2 + this.normal[2] ** 2
+		);
+		if (norm > 0) {
+			this.normal = this.normal.map((v) => v / norm);
+		}
+	}
+	calculateModifiers() {
+		this.calculateNormalVector();
+		for (let i = 0; i < this.geometry.attributes.position.count; i++) {
+			let z = this.original_signs[i];
+			this.modifier[i] = multiplyScalar(this.normal, (z * this.tama) / 2);
+		}
+		for (let i = 0; i < this.line_geometry.attributes.position.count; i++) {
+			let z = this.original_signs_lines[i];
+			this.line_modifier[i] = multiplyScalar(
+				this.normal,
+				(z * this.tama) / 2
+			);
+		}
+	}
 	transformation(geo) {
 		this._domain = [];
 		this.modifier = [];
 		this.line_domain = [];
 		this.line_modifier = [];
+		this.calculateNormalVector();
+		this.original_signs = [];
+		this.original_signs_lines = [];
 		const Z = [];
 		for (let i = 0; i < geo.attributes.position.count; i++) {
 			const x = geo.attributes.position.getX(i);
@@ -854,14 +960,20 @@ class Quadrilateral extends Element3D {
 			const z = geo.attributes.position.getZ(i);
 			Z.push([x * 2, y * 2, 2 * z]);
 			this._domain.push([x * 2, y * 2]);
-			this.modifier.push([0.0, 0.0, (this.tama / 20) * (z + 0.5)]);
+			this.modifier.push(
+				multiplyScalar(this.normal, (z * this.tama) / 2)
+			);
+			this.original_signs.push(Math.sign(z));
 		}
 		for (let i = 0; i < this.line_geometry.attributes.position.count; i++) {
 			const x = this.line_geometry.attributes.position.getX(i);
 			const y = this.line_geometry.attributes.position.getY(i);
 			const z = this.line_geometry.attributes.position.getZ(i);
 			this.line_domain.push([x * 2, y * 2]);
-			this.line_modifier.push([0.0, 0.0, (this.tama / 20) * (z + 0.5)]);
+			this.line_modifier.push(
+				multiplyScalar(this.normal, (z * this.tama) / 2)
+			);
+			this.original_signs_lines.push(Math.sign(z));
 		}
 		return Z;
 	}

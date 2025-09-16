@@ -261,6 +261,7 @@ class FEMViewer {
 		this.config_dict = CONFIG_DICT["GENERAL"];
 		this.dimensions = ["x", "y", "z"];
 
+		this.extrude_thickness = false;
 		// THREE JS
 		this.renderer = new THREE.WebGLRenderer({
 			canvas,
@@ -770,10 +771,13 @@ class FEMViewer {
 		this.animate = false;
 		this.colorOptions = "nocolor";
 		this.config_dict = CONFIG_DICT["GENERAL"];
+		this.magnif = 0.0;
+
 		this.min_search_radius = -Infinity;
 		this.not_draw_elements = []; // quitar
 		this.bufferGeometries = [];
 		this.bufferLines = [];
+		this.extrude_thickness = false;
 
 		this.nodes = [];
 		this.dictionary = [];
@@ -783,7 +787,6 @@ class FEMViewer {
 		this.step = 0;
 		this.elements = [];
 		this.types = [];
-		this.magnif = 0.0;
 		this.max_abs_disp = undefined;
 		this.border_elements = [];
 		this.scene.remove(this.model);
@@ -1018,6 +1021,16 @@ class FEMViewer {
 					.onFinishChange(this.toogleSolutionAsDisp.bind(this));
 			}
 		}
+		if (this.config_dict["thickness"]) {
+			this.settingsFolder
+				.add(this, "extrude_thickness")
+				.name("Extrude thickness")
+				.listen()
+				.onChange(() => {
+					this.updateMeshCoords();
+					this.updateGeometry();
+				});
+		}
 
 		this.settingsFolder
 			.add(this, "clickMode", [
@@ -1057,6 +1070,9 @@ class FEMViewer {
 		this.guiSettings();
 		if (!this.solution_as_displacement) {
 			this.magnif = 0.0;
+			if (this.config_dict["defaultMagnifier"]) {
+				this.magnif = this.config_dict["defaultMagnifier"];
+			}
 			this.updateSolutionAsDisplacement();
 		} else {
 			this.updateVariableAsSolution();
@@ -1316,9 +1332,17 @@ class FEMViewer {
 		for (let i = 0; i < this.elements.length; i++) {
 			const e = this.elements[i];
 			if (this.draw_lines) {
-				e.setGeometryCoords(this.magnif * this.mult, this.norm);
+				e.setGeometryCoords(
+					this.magnif * this.mult,
+					this.norm,
+					this.extrude_thickness
+				);
 			} else {
-				e.setGeometryCoords(this.magnif * this.mult, this.norm);
+				e.setGeometryCoords(
+					this.magnif * this.mult,
+					this.norm,
+					this.extrude_thickness
+				);
 			}
 		}
 		if (this.colors) {
@@ -1870,6 +1894,9 @@ class FEMViewer {
 				};
 			}
 		}
+		if (this.config_dict["defaultMagnifier"]) {
+			this.magnif = this.config_dict["defaultMagnifier"];
+		}
 		// Use all data in jsondata["properties"] as available properties
 		// to be visualized in the color map
 
@@ -2051,12 +2078,20 @@ class FEMViewer {
 			for (const node of gdls) {
 				coords.push(this.nodes[node]);
 			}
+
 			if (this.types[i] in types) {
-				const e = new types[this.types[i]](
-					coords,
-					egdls,
-					(this.size / 10) * this.norm
-				);
+				let th = this.size / 10;
+				if (this.config_dict["thickness"]) {
+					let thickness =
+						this.prop_dict[this.config_dict["thickness"]][1];
+					if (thickness[1] instanceof Array) {
+						th = thickness[1][i];
+					} else {
+						th = thickness[1];
+					}
+				}
+
+				const e = new types[this.types[i]](coords, egdls, th);
 				this.elements.push(e);
 
 				let d = 0;

@@ -36,7 +36,8 @@ class ElementView {
 		);
 		this.element.setGeometryCoords(
 			this.parent.magnif * this.parent.mult,
-			this.parent.norm
+			this.parent.norm,
+			this.parent.extrude_thickness
 		);
 		let Cfuntion = undefined;
 		if (this.parent.config_dict["C"]) {
