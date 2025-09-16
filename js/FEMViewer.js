@@ -849,7 +849,7 @@ class FEMViewer {
 		let O = this;
 		this.dropzone = new Dropzone("form#json-file-input", {
 			paramName: "file",
-			maxFilesize: 50,
+			maxFilesize: 500,
 			autoQueue: false,
 			acceptedFiles: ".json",
 			dictDefaultMessage:
