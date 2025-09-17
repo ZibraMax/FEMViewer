@@ -360,6 +360,11 @@ class Element {
 				epsilon.push(s3);
 			}
 			result = epsilon[colorMode];
+		} else if (colorMode.slice(0, 3) == "dof") {
+			let dof = parseInt(colorMode.slice(4));
+			for (let i = 0; i < P.length; i++) {
+				result += P[i] * this.Ue[dof][i];
+			}
 		} else if (colorMode != "nocolor") {
 			result = du[colorMode[0]][colorMode[1]];
 		}

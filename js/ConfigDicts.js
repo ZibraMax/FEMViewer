@@ -156,8 +156,8 @@ const ShellAndHinge = {
 	displacements: true,
 	thickness: "th",
 	defaultMagnifier: 1,
-	dict: {},
 	props: [],
+	dict: {},
 };
 
 const CONFIG_DICT = {

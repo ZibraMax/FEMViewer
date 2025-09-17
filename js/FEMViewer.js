@@ -1570,10 +1570,18 @@ class FEMViewer {
 			this.guifolder.destroy();
 		}
 		this.guifolder = this.gui.addFolder("Solutions");
+
+		// Degrees of freedom
+		let dict_dof = {};
+		for (let i = 0; i < this.nvn; i++) {
+			dict_dof["dof " + i] = "dof_" + i;
+		}
+
 		this.color_select_option = this.guifolder
 			.add(this, "colorOptions", {
 				"No color": "nocolor",
 				"|U|": "dispmag",
+				...dict_dof,
 				"Scaled Jacobian": "scaled_jac",
 				...this.config_dict["dict"],
 				...this.prop_dict_names,
