@@ -314,6 +314,14 @@ class FEMViewer {
 		this.settings();
 		this.createListeners();
 	}
+
+	updateMagnif(nmagnif) {
+		this.magnif = nmagnif;
+		if (this.config_dict["defaultMagnifier"]) {
+			this.magnif = this.config_dict["defaultMagnifier"];
+		}
+	}
+
 	createModals() {
 		this.JSONModal = new Modal(this.container, "File input");
 		let content = document.createElement("div");
@@ -1070,10 +1078,7 @@ class FEMViewer {
 		this.config_dict["displacements"] = this.solution_as_displacement;
 		this.guiSettings();
 		if (!this.solution_as_displacement) {
-			this.magnif = 0.0;
-			if (this.config_dict["defaultMagnifier"]) {
-				this.magnif = this.config_dict["defaultMagnifier"];
-			}
+			this.updateMagnif(0.0);
 			this.updateSolutionAsDisplacement();
 		} else {
 			this.updateVariableAsSolution();
@@ -1121,7 +1126,7 @@ class FEMViewer {
 				.name("Animation type")
 				.listen()
 				.onChange(() => {
-					this.magnif = 1.0;
+					this.updateMagnif(1.0);
 					this.time = 0.0;
 					this.updateMeshCoords();
 					this.updateGeometry();
@@ -1903,9 +1908,7 @@ class FEMViewer {
 				};
 			}
 		}
-		if (this.config_dict["defaultMagnifier"]) {
-			this.magnif = this.config_dict["defaultMagnifier"];
-		}
+		this.updateMagnif(0.0);
 		// Use all data in jsondata["properties"] as available properties
 		// to be visualized in the color map
 
@@ -2030,6 +2033,15 @@ class FEMViewer {
 		this.U = this.solutions[this.step].flat();
 
 		this.updateDispSlider();
+		if (this.solutions_info[this.step]["solver-type"]) {
+			if (
+				this.solutions_info[this.step]["solver-type"]
+					.toLowerCase()
+					.includes("eigen")
+			) {
+				this.magnif = 0.15 / this.max_abs_disp;
+			}
+		}
 
 		for (const e of this.elements) {
 			e.setUe(
