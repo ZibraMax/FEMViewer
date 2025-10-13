@@ -691,6 +691,7 @@ class Lineal extends Element3D {
 			const z = geo.attributes.position.getZ(i);
 			Z.push([x * 2, y * 2, z * 2]);
 			this._domain.push([x * 2]);
+
 			this.modifier.push([
 				0.0,
 				(this.tama / 20) * (y + 0.5),

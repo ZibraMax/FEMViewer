@@ -2102,6 +2102,7 @@ class FEMViewer {
 
 			if (this.types[i] in types) {
 				let th = this.size / 10;
+
 				if (this.config_dict["thickness"]) {
 					let thickness =
 						this.prop_dict[this.config_dict["thickness"]][1];
@@ -2109,6 +2110,9 @@ class FEMViewer {
 						th = thickness[1][i];
 					} else {
 						th = thickness[1];
+						if (typeof th !== "number") {
+							th = this.size / 10;
+						}
 					}
 				}
 
